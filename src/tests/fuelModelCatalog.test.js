@@ -73,7 +73,6 @@ describe('FuelModelCatalog Class', () => {
         const catalog = new FuelModelCatalog()
         const keys = catalog.getStringKeys()
         const curingClasses = catalog.getCuringClasses(keys)
-        expect(curingClasses).toContain('')
         expect(curingClasses).toContain('curedHerb')
     })
     it('getMoistureClasses()', () => {

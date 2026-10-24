@@ -323,21 +323,21 @@ export const FuelModels = [
         0, 0, [
         ],
     ),
-    model( 101, "gr1", "FBFM40", "Short, sparse, dry climate grass",
+    model( 101, "gr1", "Scott & Burgan 2005", "Short, sparse, dry climate grass",
         "Short, sparse dry climate grass is short, naturally or heavy grazing, predicted rate of fire spread and flame length low ",
         0.4, 0.15, [
             dead1h(0.004591368227731864, 2200, 8000),
             curableHerb(0.013774104683195591, 2000, 8000),
         ],
     ),
-    model( 102, "gr2", "FBFM40", "Low load, dry climate grass",
+    model( 102, "gr2", "Scott & Burgan 2005", "Low load, dry climate grass",
         "Low load, dry climate grass primarily grass with some small amounts of fine, dead fuel, any shrubs do not affect fire behavior",
         1, 0.15, [
             dead1h(0.004591368227731864, 2000, 8000),
             curableHerb(0.04591368227731864, 1800, 8000),
         ],
     ),
-    model( 103, "gr3", "FBFM40", "Low load, very coarse, humid climate grass",
+    model( 103, "gr3", "Scott & Burgan 2005", "Low load, very coarse, humid climate grass",
         "Low load, very coarse, humid climate grass continuous, coarse humid climate grass, any shrubs do not affect fire behavior",
         2, 0.3, [
             dead1h(0.004591368227731864, 1500, 8000),
@@ -345,35 +345,35 @@ export const FuelModels = [
             curableHerb(0.06887052341597796, 1300, 8000),
         ],
     ),
-    model( 104, "gr4", "FBFM40", "Moderate load, dry climate grass",
+    model( 104, "gr4", "Scott & Burgan 2005", "Moderate load, dry climate grass",
         "Moderate load, dry climate grass, continuous, dry climate grass, fuelbed depth about 2 feet",
         2, 0.15, [
             dead1h(0.01147842056932966, 2000, 8000),
             curableHerb(0.0872359963269054, 1800, 8000),
         ],
     ),
-    model( 105, "gr5", "FBFM40", "Low load, humid climate grass",
+    model( 105, "gr5", "Scott & Burgan 2005", "Low load, humid climate grass",
         "Low load, humid climate grass, fuelbed depth is about 1-2 feet",
         1.5, 0.4, [
             dead1h(0.018365472910927456, 1800, 8000),
             curableHerb(0.11478420569329659, 1600, 8000),
         ],
     ),
-    model( 106, "gr6", "FBFM40", "Moderate load, humid climate grass",
+    model( 106, "gr6", "Scott & Burgan 2005", "Moderate load, humid climate grass",
         "Moderate load, continuous humid climate grass, not so coarse as GR5",
         1.5, 0.4, [
             dead1h(0.004591368227731864, 2200, 9000),
             curableHerb(0.15610651974288337, 2000, 9000),
         ],
     ),
-    model( 107, "gr7", "FBFM40", "High load, dry climate grass",
+    model( 107, "gr7", "Scott & Burgan 2005", "High load, dry climate grass",
         "High load, continuous dry climate grass, grass is about 3 feet high",
         3, 0.15, [
             dead1h(0.04591368227731864, 2000, 8000),
             curableHerb(0.24793388429752067, 1800, 8000),
         ],
     ),
-    model( 108, "gr8", "FBFM40", "High load, very coarse, humid climate grass",
+    model( 108, "gr8", "Scott & Burgan 2005", "High load, very coarse, humid climate grass",
         "High load, very coarse, continuous, humid climate grass, spread rate and flame length may be extreme if grass is fully cured",
         4, 0.3, [
             dead1h(0.02295684113865932, 1500, 8000),
@@ -381,7 +381,7 @@ export const FuelModels = [
             curableHerb(0.33516988062442604, 1300, 8000),
         ],
     ),
-    model( 109, "gr9", "FBFM40", "Very high load, humid climate grass",
+    model( 109, "gr9", "Scott & Burgan 2005", "Very high load, humid climate grass",
         "Very high load, dense, tall, humid climate grass, about 6 feet tall, spread rate and flame length can be extreme if grass is fully cured",
         5, 0.4, [
             dead1h(0.04591368227731864, 1800, 8000),
@@ -389,7 +389,7 @@ export const FuelModels = [
             curableHerb(0.4132231404958677, 1600, 8000),
         ],
     ),
-    model( 121, "gs1", "FBFM40", "Low load, dry climate grass-shrub",
+    model( 121, "gs1", "Scott & Burgan 2005", "Low load, dry climate grass-shrub",
         "Low load, dry climate grass-shrub shrub about 1 foot high, grass load low, spread rate moderate and flame length low",
         0.9, 0.15, [
             dead1h(0.009182736455463728, 2000, 8000),
@@ -397,7 +397,7 @@ export const FuelModels = [
             liveStem(0.02984403, 1800),
         ],
     ),
-    model( 122, "gs2", "FBFM40", "Moderate load, dry climate grass-shrub",
+    model( 122, "gs2", "Scott & Burgan 2005", "Moderate load, dry climate grass-shrub",
         "Moderate load, dry climate grass-shrub, shrubs are 1-3 feet high, grass load moderate, spread rate high, and flame length is moderate",
         1.5, 0.15, [
             dead1h(0.02295684113865932, 2000, 8000),
@@ -406,7 +406,7 @@ export const FuelModels = [
             liveStem(0.04591368227731864, 1800),
         ],
     ),
-    model( 123, "gs3", "FBFM40", "Moderate load, humid climate grass-shrub",
+    model( 123, "gs3", "Scott & Burgan 2005", "Moderate load, humid climate grass-shrub",
         "Moderate load, humid climate grass-shrub, moderate grass/shrub load, grass/shrub depth is less than 2 feet, spread rate is high and flame length is moderate",
         1.8, 0.4, [
             dead1h(0.013774104683195591, 1800, 8000),
@@ -415,7 +415,7 @@ export const FuelModels = [
             liveStem(0.057392102846648294, 1600),
         ],
     ),
-    model( 124, "gs4", "FBFM40", "High load, humid climate grass-shrub",
+    model( 124, "gs4", "Scott & Burgan 2005", "High load, humid climate grass-shrub",
         "High load, humid climate grass-shrub, heavy grass/shrub load, depth is greater than 2 feet, spread rate is high and flame length very high",
         2.1, 0.4, [
             dead1h(0.0872359963269054, 1800, 8000),
@@ -425,7 +425,7 @@ export const FuelModels = [
             liveStem(0.3259871441689623, 1600),
         ],
     ),
-    model( 141, "sh1", "FBFM40", "Low load, dry climate shrub",
+    model( 141, "sh1", "Scott & Burgan 2005", "Low load, dry climate shrub",
         "Low load dry climate shrub, woody shrubs and shrub litter, fuelbed depth about 1 foot, may be some grass, spread rate and flame low",
         1, 0.15, [
             dead1h(0.01147842056932966, 2000, 8000),
@@ -434,7 +434,7 @@ export const FuelModels = [
             liveStem(0.05968778696051423, 1600),
         ],
     ),
-    model( 142, "sh2", "FBFM40", "Moderate load, dry climate shrub",
+    model( 142, "sh2", "Scott & Burgan 2005", "Moderate load, dry climate shrub",
         "Moderate load dry climate shrub, woody shrubs and shrub litter, fuelbed depth about 1 foot, no grass, spread rate and flame low",
         1, 0.15, [
             dead1h(0.06198347107438017, 2000, 8000),
@@ -443,7 +443,7 @@ export const FuelModels = [
             liveStem(0.17676767676767677, 1600),
         ],
     ),
-    model( 143, "sh3", "FBFM40", "Moderate load, humid climate shrub",
+    model( 143, "sh3", "Scott & Burgan 2005", "Moderate load, humid climate shrub",
         "Moderate load, humid climate shrub, woody shrubs and shrub litter, possible pine overstory, fuelbed depth 2-3 feet, spread rate and flame low",
         2.4, 0.4, [
             dead1h(0.02066115702479339, 1600, 8000),
@@ -451,7 +451,7 @@ export const FuelModels = [
             liveStem(0.28466483011937554, 1400),
         ],
     ),
-    model( 144, "sh4", "FBFM40", "Low load, humid climate timber-shrub",
+    model( 144, "sh4", "Scott & Burgan 2005", "Low load, humid climate timber-shrub",
         "Low load, humid climate timber shrub, woody shrubs and shrub litter, low to moderate load, possible pine overstory, fuelbed depth about 3 feet, spread rate high and flame moderate",
         3, 0.3, [
             dead1h(0.03902662993572084, 2000, 8000),
@@ -460,7 +460,7 @@ export const FuelModels = [
             liveStem(0.11707988980716252, 1600),
         ],
     ),
-    model( 145, "sh5", "FBFM40", "High load, dry climate shrub",
+    model( 145, "sh5", "Scott & Burgan 2005", "High load, dry climate shrub",
         "High load, dry climate shrub litter and woody shrubs, heavy load with depth 4-6 feet, spread rate and flame very high, moisture extinction high",
         6, 0.15, [
             dead1h(0.1652892561983471, 750, 8000),
@@ -468,7 +468,7 @@ export const FuelModels = [
             liveStem(0.13314967860422405, 1600),
         ],
     ),
-    model( 146, "sh6", "FBFM40", "Low load, humid climate shrub",
+    model( 146, "sh6", "Scott & Burgan 2005", "Low load, humid climate shrub",
         "Low load, humid climate shrub, woody shrubs and shrub litter, dense shrubs, little or no herbaceous fuel, depth about 2 feet, spread rate and flame high",
         2, 0.3, [
             dead1h(0.13314967860422405, 750, 8000),
@@ -476,7 +476,7 @@ export const FuelModels = [
             liveStem(0.06427915518824609, 1600),
         ],
     ),
-    model( 147, "sh7", "FBFM40", "Very high load, dry climate shrub",
+    model( 147, "sh7", "Scott & Burgan 2005", "Very high load, dry climate shrub",
         "Very high load, dry climate shrub, woody shrubs and shrub litter, very heavy shrub load, depth 4-6 feet, spread rate somewhat lower than SH6 and flame very high",
         6, 0.15, [
             dead1h(0.16069788797061524, 750, 8000),
@@ -485,7 +485,7 @@ export const FuelModels = [
             liveStem(0.15610651974288337, 1600),
         ],
     ),
-    model( 148, "sh8", "FBFM40", "High load, humid climate shrub",
+    model( 148, "sh8", "Scott & Burgan 2005", "High load, humid climate shrub",
         "High load, humid climate shrub, woody shrubs and shrub litter, dense shrubs, little or no herbaceous fuel, depth about 3 feet, spread rate and flame high",
         3, 0.4, [
             dead1h(0.0941230486685032, 750, 8000),
@@ -494,7 +494,7 @@ export const FuelModels = [
             liveStem(0.19972451790633605, 1600),
         ],
     ),
-    model( 149, "sh9", "FBFM40", "Very high load, humid climate shrub",
+    model( 149, "sh9", "Scott & Burgan 2005", "Very high load, humid climate shrub",
         "Very high load, humid climate shrub, woody shrubs and shrub litter, dense finely branched shrubs with fine dead fuel, 4-6 feet tall, herbaceous may be present, spread rate and flame high",
         4.4, 0.4, [
             dead1h(0.20661157024793386, 750, 8000),
@@ -503,7 +503,7 @@ export const FuelModels = [
             liveStem(0.3213957759412305, 1500),
         ],
     ),
-    model( 161, "tu1", "FBFM40", "Light load, dry climate timber-grass-shrub",
+    model( 161, "tu1", "Scott & Burgan 2005", "Light load, dry climate timber-grass-shrub",
         "Low load dry climate timber grass shrub, low load of grass and/or shrub with litter, spread rate and flame low",
         0.6, 0.2, [
             dead1h(0.009182736455463728, 2000, 8000),
@@ -513,7 +513,7 @@ export const FuelModels = [
             liveStem(0.04132231404958678, 1600),
         ],
     ),
-    model( 162, "tu2", "FBFM40", "Moderate load, humid climate timber-shrub",
+    model( 162, "tu2", "Scott & Burgan 2005", "Moderate load, humid climate timber-shrub",
         "Moderate load, humid climate timber-shrub, moderate litter load with some shrub, spread rate moderate and flame low",
         1, 0.3, [
             dead1h(0.0436179981634527, 2000, 8000),
@@ -522,7 +522,7 @@ export const FuelModels = [
             liveStem(0.009182736455463728, 1600),
         ],
     ),
-    model( 163, "tu3", "FBFM40", "Moderate load, humid climate timber-grass-shrub",
+    model( 163, "tu3", "Scott & Burgan 2005", "Moderate load, humid climate timber-grass-shrub",
         "Moderate load, humid climate timber grass shrub, moderate forest litter with some grass and shrub, spread rate high and flame moderate",
         1.3, 0.3, [
             dead1h(0.050505050505050504, 1800, 8000),
@@ -532,14 +532,14 @@ export const FuelModels = [
             liveStem(0.050505050505050504, 1400),
         ],
     ),
-    model( 164, "tu4", "FBFM40", "Dwarf conifer understory",
+    model( 164, "tu4", "Scott & Burgan 2005", "Dwarf conifer understory",
         "Dwarf conifer with understory, short conifer trees with grass or moss understory, spread rate and flame moderate",
         0.5, 0.12, [
             dead1h(0.20661157024793386, 2300, 8000),
             liveStem(0.09182736455463728, 2000),
         ],
     ),
-    model( 165, "tu5", "FBFM40", "Very high load, dry climate timber-shrub",
+    model( 165, "tu5", "Scott & Burgan 2005", "Very high load, dry climate timber-shrub",
         "Very high load, dry climate timber shrub, heavy forest litter with shrub or small tree understory, spread rate and flame moderate",
         1, 0.25, [
             dead1h(0.18365472910927455, 1500, 8000),
@@ -548,7 +548,7 @@ export const FuelModels = [
             liveStem(0.13774104683195593, 750),
         ],
     ),
-    model( 181, "tl1", "FBFM40", "Low load, compact conifer litter",
+    model( 181, "tl1", "Scott & Burgan 2005", "Low load, compact conifer litter",
         "Low load compact conifer litter, compact forest litter, light to moderate load, 1-2 inches deep, may represent a recent burn, spread rate and flame low",
         0.2, 0.3, [
             dead1h(0.04591368227731864, 2000, 8000),
@@ -556,7 +556,7 @@ export const FuelModels = [
             dead100h(0.1652892561983471),
         ],
     ),
-    model( 182, "tl2", "FBFM40", "Low load broadleaf litter",
+    model( 182, "tl2", "Scott & Burgan 2005", "Low load broadleaf litter",
         "Low load broadleaf litter, broadleaf, hardwood litter, spread rate and flame low",
         0.2, 0.25, [
             dead1h(0.06427915518824609, 2000, 8000),
@@ -564,7 +564,7 @@ export const FuelModels = [
             dead100h(0.10101010101010101),
         ],
     ),
-    model( 183, "tl3", "FBFM40", "Moderate load conifer litter",
+    model( 183, "tl3", "Scott & Burgan 2005", "Moderate load conifer litter",
         "Moderate load conifer litter, moderate load conifer litter, light load of coarse fuels, spread rate is very low and flame low",
         0.3, 0.2, [
             dead1h(0.02295684113865932, 2000, 8000),
@@ -572,7 +572,7 @@ export const FuelModels = [
             dead100h(0.12855831037649218),
         ],
     ),
-    model( 184, "tl4", "FBFM40", "Small downed logs",
+    model( 184, "tl4", "Scott & Burgan 2005", "Small downed logs",
         "Small downed logs moderate load of fine litter and coarse fuels, small diameter downed logs, spread rate and flame low",
         0.4, 0.25, [
             dead1h(0.02295684113865932, 2000, 8000),
@@ -580,7 +580,7 @@ export const FuelModels = [
             dead100h(0.1928374655647383),
         ],
     ),
-    model( 185, "tl5", "FBFM40", "High load conifer litter",
+    model( 185, "tl5", "Scott & Burgan 2005", "High load conifer litter",
         "High load conifer litter, light slash or dead fuel, spread rate and flame low",
         0.6, 0.25, [
             dead1h(0.05280073461891643, 2000, 8000),
@@ -588,7 +588,7 @@ export const FuelModels = [
             dead100h(0.20202020202020202),
         ],
     ),
-    model( 186, "tl6", "FBFM40", "High load broadleaf litter",
+    model( 186, "tl6", "Scott & Burgan 2005", "High load broadleaf litter",
         "Moderate load broadleaf litter, spread rate and flame moderate",
         0.3, 0.25, [
             dead1h(0.11019283746556473, 2000, 8000),
@@ -596,7 +596,7 @@ export const FuelModels = [
             dead100h(0.055096418732782364),
         ],
     ),
-    model( 187, "tl7", "FBFM40", "Large downed logs",
+    model( 187, "tl7", "Scott & Burgan 2005", "Large downed logs",
         "Large downed logs, heavy load forest litter, larger diameter downed logs, spread rate and flame low",
         0.4, 0.25, [
             dead1h(0.013774104683195591, 2000, 8000),
@@ -604,7 +604,7 @@ export const FuelModels = [
             dead100h(0.371900826446281),
         ],
     ),
-    model( 188, "tl8", "FBFM40", "Long-needle litter",
+    model( 188, "tl8", "Scott & Burgan 2005", "Long-needle litter",
         "Long needle litter, moderate load long needle pine litter, may have small amounts of herbaceous fuel, spread rate moderate and flame low",
         0.3, 0.35, [
             dead1h(0.2662993572084481, 1800, 8000),
@@ -612,7 +612,7 @@ export const FuelModels = [
             dead100h(0.050505050505050504),
         ],
     ),
-    model( 189, "tl9", "FBFM40", "Very high load broadleaf litter",
+    model( 189, "tl9", "Scott & Burgan 2005", "Very high load broadleaf litter",
         "Very high load broadleaf litter, may be heavy needle drape, spread rate and flame moderate",
         0.6, 0.35, [
             dead1h(0.305325987144169, 1800, 8000),
@@ -620,7 +620,7 @@ export const FuelModels = [
             dead100h(0.19054178145087236),
         ],
     ),
-    model( 201, "sb1", "FBFM40", "Low load activity fuel",
+    model( 201, "sb1", "Scott & Burgan 2005", "Low load activity fuel",
         "Low load activity fuel, light dead and down activity fuel, fine fuel is 10-20 t/ac, 1-3 inches in diameter, depth < 1 foot, spread rate moderate and flame low",
         1, 0.25, [
             dead1h(0.06887052341597796, 2000, 8000),
@@ -628,7 +628,7 @@ export const FuelModels = [
             dead100h(0.505050505050505),
         ],
     ),
-    model( 202, "sb2", "FBFM40", "Moderate load activity or low load blowdown",
+    model( 202, "sb2", "Scott & Burgan 2005", "Moderate load activity or low load blowdown",
         "Moderate load activity fuel or low load blowdown, 7-12 t/ac, 0-3 inch diameter class, depth about 1 foot, blowdown scattered with many still standing, spread rate moderate and flame low",
         1, 0.25, [
             dead1h(0.20661157024793386, 2000, 8000),
@@ -636,7 +636,7 @@ export const FuelModels = [
             dead100h(0.18365472910927455),
         ],
     ),
-    model( 203, "sb3", "FBFM40", "High load activity fuel or moderate load blowdown",
+    model( 203, "sb3", "Scott & Burgan 2005", "High load activity fuel or moderate load blowdown",
         "High load activity fuel or moderate load blowdown, heavy dead down activity fuel or moderate blowdown, 7-12 t/ac, 0-.25 inch diameter class, depth > 1 foot, blowdown moderate trees compacted to near the ground, spread rate and flame high",
         1.2, 0.25, [
             dead1h(0.2525252525252525, 2000, 8000),
@@ -644,7 +644,7 @@ export const FuelModels = [
             dead100h(0.13774104683195593),
         ],
     ),
-    model( 204, "sb4", "FBFM40", "High load blowdown",
+    model( 204, "sb4", "Scott & Burgan 2005", "High load blowdown",
         "High load blowdown, heavy blowdown fuel, blowdown is total fuelbed not compacted, foliage and fine fuel still attached to blowdown, spread rate and flame very high ",
         2.7, 0.25, [
             dead1h(0.24104683195592286, 2000, 8000),

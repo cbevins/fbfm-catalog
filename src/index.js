@@ -1,3 +1,6 @@
 // export { FuelModels, model, dead1h, dead10h, dead100h, liveStem, liveHerb, curableHerb } from './FuelModels.js'
 export * from './FuelModels.js'
+export { FireBehavior } from './FireBehavior.js'
+export { FuelBed } from './FuelBed.js'
+export { FuelIgnition } from './FuelIgnition.js'
 export { FuelModelCatalog } from './FuelModelCatalog.js'

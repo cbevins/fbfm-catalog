@@ -1,6 +1,6 @@
 {
   "name": "fbfm-catalog",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Fire behavior fuel models in javascript",
   "type": "module",
   "main": "./src/index.js",

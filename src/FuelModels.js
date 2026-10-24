@@ -1,146 +1,166 @@
-// ----------------------------------------------------------------------------
-// This file contains definitions of the standard fire behavior fuel models.
-// This includes:
-// - the original 13 fuel models documented by Anderson (and also Albini and Rothermel),
-// - the 40 additional fuel models published by Scott & Burgan,
-// - the 5 'non-burnable' fuel types used by the LANDFIRE FBFM40 layer, and
-// - some example 'custom' fuel models to illustrate possible catalog expansion.
-// This file was auto-generated on 6/11/2026
-// ----------------------------------------------------------------------------
+/**
+This file contains definitions of the *standard* fire behavior fuel models:
+    - the original 13 fuel models documented by Anderson 1982 (after Rothermel 1972 and Albini 1976),
+        and used by the LANDFIRE FMFM13 layer,
+    - the 40 additional fuel models published by Scott & Burgan,
+        and used by the LANDFIRE FBFM40 layer, and
+    - the 5 'non-burnable' fuel types used by the LANDFIRE FBFM40 layer
 
-// ----------------------------------------------------------------------------
-// Part 1: FuelModelParticle Class Definition
-// ----------------------------------------------------------------------------
+----------------------------------------------------------------------------
+Background
+----------------------------------------------------------------------------
 
-// Every fuel model has one or more FuelModelParticle objects.  Below is the
-// prototype (template) object used to create each FuelModelParticle, and a
-// description of their properties.
+Hal Anderson is widely credited with defining the 'original' 13 fire behavior fuel models in:
+    Anderson, Hal E. 1982.
+        Aids to determining fuel models for estimating fire behavior.
+        Gen. Tech. Rep. INT-GTR-122. Ogden, Utah: U.S.Department of Agriculture, Forest Service,
+        Intermountain Forest and Range Experiment Station. 22 p.
+        https://research.fs.usda.gov/download/treesearch/6447.pdf
 
-const FuelModelParticle = {
-    // The "life" property is one of the following strings: "dead", "live", or "curable".
-    life: "dead",
+In fact, Anderson actually gave a more formal documentation (with visual aids)
+of the 13 fuel models originally described in Table 1 (page 92) of Frank Albini's paper:
+    Albini, Frank A. 1976.
+        Estimating wildfire behavior and effects.
+        Gen. Tech. Rep. INT-GTR-30. Ogden, UT: U.S. Department of Agriculture, Forest Service,
+        Intermountain Forest and Range Experiment Station. 92 p.
+        https://research.fs.usda.gov/download/treesearch/29574.pdf
 
-    // The "ovendryLoad" is in (lb/ft2) [where lb/ft2 = 0.004591368227731864 * ton/ac]
-    ovendryLoad: 0,
+Albini's 13 fuel models, in turn, were heavily based on the 11 fuel models originally
+presented by Richard C Rothermel in his 1972 paper: "A Mathematical Model...".
+    Rothermel, Richard C. 1972.
+        A mathematical model for predicting fire spread in wildland fuels.
+        Res. Pap. INT-RP-115. Ogden, UT: U.S. Department of Agriculture, Forest Service,
+        Intermountain Forest and Range Experiment Station. 40 p.
+        https://research.fs.usda.gov/download/treesearch/32533.pdf
 
-    // The "savr" is the surface area-to-volume ratio (ft2/ft3)
-    savr: 1,
+Finally, Scott and Burgan presented a set of fuel models covering a broader range of
+fuel types and burning conditions.
+    Scott, Joe H.; Burgan, Robert E. 2005.
+        Standard fire behavior fuel models: a comprehensive set for use with Rothermel's surface fire spread model.
+        Gen. Tech. Rep. RMRS-GTR-153. Fort Collins, CO: U.S. Department of Agriculture, Forest Service,
+        Rocky Mountain Research Station. 72 p.
+        https://research.fs.usda.gov/download/treesearch/9521.pdf
 
-    // The "heat" is the low heat content, aka the "heat of combustion" (BTU/lb)
-    heat: 8000,
+----------------------------------------------------------------------------
+Part 1: Fuel Particles
+----------------------------------------------------------------------------
 
-    // The "density" is the fuel particle fiber density (lb/ft3)
-    density: 32,
+The implementation of 'fuel models' defined below permits the definition of 'custom'
+fuel models with their own dead/live/curable fuel moisture clases.
 
-    // The "totalMineral" is the fuel particle total mineral content (lb minerals / lb ovendry fuel)
-    totalMineral: 0.0555,
+----------------------------------------------------------------------------
+Part 1: Fuel Particles
+----------------------------------------------------------------------------
 
-    // The "effectiveMineral" is fuel particle "effective" (non-silica) mineral content (lb silica-free minerals / lb ovendry wood)
-    effectiveMineral: 0.01,
+Every fuel model has one or more FuelParticle objects that are created by
+the makeParticle() function defined below.
+*/
 
-    // The "deadMoistureClass" is the key of the moisture content property applied when this particle is dead.
-    // The standard fuel models use "moistureDead1h", "moistureDead10h", and "moistureDead100h" dead
-    // fuel moisture class keys, but custom fuel models may assign new keys such as "moistureDeadDuff",
-    // in which case the user would include a "moistureDeadDuff" property in the inputs object passed to
-    // new Fire(inputs) or new FuelIgnition(inputs).
-    deadMoistureClass: "moistureDead1h",
-
-    // The "liveMoistureClass" is the key of the moisture content property applied when this particle is live.
-    // The standard fuel models use "moistureLiveHerb" and "moistureLiveStem" live fuel moisture class keys,
-    // but custom fuel models may assign new keys such as "moistureLiveCheatgrass", in which case
-    // the user would include a "moistureLiveCheatgrass" property in the inputs object passed to
-    // new Fire(inputs) or new FuelIgnition(inputs).
-    liveMoistureClass: "moistureLiveStem",
-
-    // The "curingClass" property is the key of the cured fraction property used to identify
-    // the cured fraction of "curable" particles.
-    // The standard fire behavior fuel models only use the "curedHerb" key, but custom fuel
-    // models may assign new keys as needed, such as "curedCheatgrass", in which case the
-    // user would include a "curedCheatgrass" property in the inputs object passed to
-    // new Fire(inputs) or new FuelBed(inputs).  If the inputs object does not have the key
-    // named below, then the cured fraction is set to 0.
-    curingClass: "dead1h",
+/**
+ * Creates a FuelParticle object.
+ * @param {string} life The "life" property is one of the following strings: "dead", "live", or "curable".
+ * @param {string} deadMoistureClass Key into an object that holds this particle's dead fuel moisture content.
+ * The standard FBFMs only use the "moistureDead1h", "moistureDead10h", and "moistureDead100h" keys,
+ * but clients may define additional keys as needed, such as "deadCheatgrass" or 'deadChaparralStem'.
+ * @param {string} liveMoistureClass Key into an object that holds this particle's live fuel moisture content.
+ * The standard FBFMs only use the "moistureLiveHerb", and "moistureLiveStem" keys,
+ * but clients may define additional keys as needed, such as "liveCheatgrass" or 'liveChaparralStem'.
+ * @param {number} ovendryLoad ovendry weight in lb/ft2 [where lb/ft2 = 0.004591368227731864 * ton/ac]
+ * @param {number} savr surface area-to-volume ratio as ft2 particle surface area / ft3 particle volume
+ * @param {number} heat low heat of of combustion (or low heat content) (Btu/lb)
+ * @param {number} density fuel particle fiber density (lb/ft3)
+ * @param {number} totalMineral fuel particle total mineral content (lb minerals / lb ovendry wood)
+ * @param {number} effectiveMineral fuel particle "effective" (non-silica) mineral content (lb silica-free minerals / lb ovendry wood)
+ * @param {string} curingClass Key into an object that holds this particle's cured fuel fraction.
+ * This is used ONLY by particles whose life==='curable'. The standard FBFMs only use the "curedHerb" key,
+ * but clients may define additional keys as needed, such as "curedCheatgrass" or 'chaparralStem'.
+ */
+export function makeParticle(life="dead", deadMoistureClass="moistureDead1h", liveMoistureClass="moistureLiveStem",
+    ovendryLoad=0, savr=1, heat=8000, density=32, totalMineral=0.0555, effectiveMineral=0.01, curingClass="curedHerb") {
+        return {life, deadMoistureClass, liveMoistureClass,
+            ovendryLoad, savr, heat, density, totalMineral, effectiveMineral, curingClass}
 }
 
-// The heat-of-combustion, density, and two mineral content properties do not vary
-// significantly across vegetative fuels and are generally treated as constants.
+/*
+----------------------------------------------------------------------------
+Dead Category FuelParticles
+----------------------------------------------------------------------------
 
-// The fire spread model recognizes two "categories" of fuel; "dead" and "live".
-// The standard fire behavior fuel models recognize 3 "classes" of dead fuels,
-// and two classes of live fuels, as described below.
+Dead category fuels are classified based upon their fuel moisture "time-lag" classes
+(1-, 10, or 100-h) indicating their response time to changes in ambient temperature
+humidity, solar radiation, and precipitation.  The time-lag, in turn, depends
+primarily upon dead particle size as expressed by its surface-area-to-volume ratio.
 
-// ----------------------------------------------------------------------------
-// Part 1.1 Dead Category FuelParticles
-// ----------------------------------------------------------------------------
+Dead 1-h fuel moisture time-lag class particles have a surface area-to-volume ratio
+less than 192 ft2/ft3 (equivalent to a 0.25-in diameter cylinder). The standard fire
+behavior fuel model surface-area-to-volume ratios for dead 1-h fuels range from
+750 to 3500 ft2/ft3 (0.064 to 0.0137 inch diameter).
+*/
+export function dead1h(ovendryLoad, savr, heat=8000) {
+    return makeParticle("dead", "moistureDead1h", "moistureLiveStem", ovendryLoad, savr, heat)
+}
 
-// Dead category fuels are classified based upon their fuel moisture "time-lag" classes
-// (1-, 10, or 100-h) indicating their response time to changes in ambient temperature
-// humidity, solar radiation, and precipitation.  The time-lag, in turn, depends
-// primarily upon dead particle size as expressed by its surface-area-to-volume ratio.
+/* Dead 10-h fuel moisture time-lag class particles have a surface area-to-volume ratio
+between 48 and 192 ft2/ft3 (1 to 0.25 inch diameter).  The standard fire behavior fuel models
+use a fixed surface-area-to-volume ratio of 109 1/ft (0.44-in diameter) for dead 10-h fuels.
+*/
+export function dead10h(ovendryLoad, savr=109, heat=8000) {
+    return makeParticle("dead", "moistureDead10h", "moistureLiveStem", ovendryLoad, savr, heat)
+}
 
-// Dead 1-h fuel moisture time-lag class particles have a surface area-to-volume ratio
-// less than 192 ft2/ft3 (equivalent to a 0.25-in diameter cylinder). The standard fuel model
-// surface-area-to-volume ratios for dead 1-h fuels range from 750 to 3500 ft2/ft3
-// (0.064 to 0.0137 inch diameter).
-// The following template object is used to create standard dead 1-h time-lag fuel particles:
-export const Dead1 = {...FuelModelParticle,
-    life: "dead",
-    deadMoistureClass: "moistureDead1h",
-    liveMoistureClass: "moistureDead1h",
-    curingClass: ""}
+/* Dead 100-h fuel moisture time-lag class particles have a surface area-to-volume ratio
+between 192 and 16 ft2/ft3 (1 to 3 inch diameter).  The standard fire behavior fuel models
+use a fixed surface-area-to-volume ratio of 30 (1.6-in diameter) for dead 100-h fuels.
+*/
+export function dead100h(ovendryLoad, savr=30, heat=8000) {
+    return makeParticle("dead", "moistureDead100h", "moistureLiveStem", ovendryLoad, savr, heat)
+}
 
-// Dead 10-h fuel moisture time-lag class particles have a surface area-to-volume ratio
-// between 48 and 192 ft2/ft3 (1 to 0.25 inch diameter).  The standard fire behavior fuel models
-// use a fixed surface-area-to-volume ratio of 109 1/ft (0.44-in diameter) for dead 10-h fuels.
-// The following template object is used to create standard dead 10-h time-lag fuel particles:
-export const Dead10 = {...FuelModelParticle,
-    life: "dead",
-    savr: 109,
-    deadMoistureClass: "moistureDead10h",
-    liveMoistureClass: "moistureDead10h",
-    curingClass: ""}
+/*
+----------------------------------------------------------------------------
+Live Category FuelParticles
+----------------------------------------------------------------------------
 
-// Dead 100-h fuel moisture time-lag class particles have a surface area-to-volume ratio
-// between 192 and 16 ft2/ft3 (1 to 3 inch diameter).  The standard fire behavior fuel models
-// use a fixed surface-area-to-volume ratio of 30 (1.6-in diameter) for dead 100-h fuels.
-// The following template object is used to create standard dead 100-h time-lag fuel particles:
-export const Dead100 = {...FuelModelParticle,
-    life: "dead",
-    savr: 30,
-    deadMoistureClass: "moistureDead100h",
-    liveMoistureClass: "moistureDead100h",
-    curingClass: ""}
+Live category fuels are able to regulate their moisture content independently
+(more or less) of synoptic ambient weather conditions.
 
-// ----------------------------------------------------------------------------
-// Part 1.2 Live Category FuelParticles
-// ----------------------------------------------------------------------------
+Live stem fuels refer to the living, above-ground woody branches, twigs, and
+stems of shrubs and trees. While their moisture contents may range seasonally
+from 50% to 300%, they generally DO NOT cure or die out during the season.
+Standard fire behavior fuel model surface area-to-volume ratios for stems 
+range from 750 to 2000 ft2/ft3 (0.064 to 0.024 inch diameter).
+*/
+export function liveStem(ovendryLoad, savr, heat=8000) {
+    return makeParticle("live", "moistureDead1h", "moistureLiveStem", ovendryLoad, savr, heat)
+}
 
-// Live category fuels are able to regulate their moisture content independently
-// (more or less) of synoptic ambient weather conditions.
+/* Live herb fuels include grasses, forbs, and ferns DO NOT cure during the season.
+Standard fire behavior fuel model surface area-to-volume ratios for herbs range
+from 1300 to 2000 ft2/ft3 (0.369 to 0.024 inches).
+*/
+export function liveHerb(ovendryLoad, savr, heat=8000) {
+    return makeParticle("live", "moistureDead1h", "moistureLiveHerb", ovendryLoad, savr, heat)
+}
 
-// "Stem" fuels refer to the living, above-ground woody branches, twigs, and
-// stems of shrubs and trees. While their moisture contents may range seasonally
-// from 50% to 300%, they generally do not cure or die out during the season.
-// Standard fire behavior fuel model surface area-to-volume ratios for stems range from
-// 750 to 2000 ft2/ft3 (0.064 to 0.024 inch diameter).
-// The following template object is used to create standard live stem particles:
-export const Stem = {...FuelModelParticle,
-    life: "live",
-    deadMoistureClass: "moistureDead1h",
-    liveMoistureClass: "moistureLiveStem",
-    curingClass: ""}
+/*
+----------------------------------------------------------------------------
+Curable Category FuelParticles
+----------------------------------------------------------------------------
 
-// "Herb" fuels include grasses, forbs, and ferns that may cure during the season.
-// The BehavePlus wildland fire modeling system considers herbs to be fully live
-// when their moisture content exceeds 120%, and fully cured (dead) when below 30%.
-// Standard fire behavior fuel model surface area-to-volume ratios for herbs range from
-// range from 1300 to 2000 ft2/ft3 (0.369 to 0.024 inches).
-// The following template object is used to create standard live or curable herb particles:
-export const Herb = {...FuelModelParticle,
-    life: "curable",
-    deadMoistureClass: "moistureDead1h",
-    liveMoistureClass: "moistureLiveHerb",
-    curingClass: "curedHerb"}
+Curable herb fuels include grasses, forbs, and ferns that may cure during the season.
+The BehavePlus wildland fire modeling system considers herbs to be fully live
+when their moisture content exceeds 120%, and fully cured (dead) when below 30%.
+
+Scott and Burgan define 17 fuel models with curable (primarily grass) fue particle components:
+101-109 (the grass series), 121-124 (the grass-shrub series), 141 (sh1), 149 (sh9),
+161 (tu1, timber-grass-shrub), and 163 (tu3, timber-grass-shrub).
+
+Standard fire behavior fuel model surface area-to-volume ratios for herbs range
+from 1300 to 2000 ft2/ft3 (0.369 to 0.024 inches).
+*/
+export function curableHerb(ovendryLoad, savr, heat=8000) {
+    return makeParticle("curable", "moistureDead1h", "moistureLiveHerb", ovendryLoad, savr, heat)
+}
 
 // ----------------------------------------------------------------------------
 // Part 2 FuelModel Class Definition
@@ -148,17 +168,20 @@ export const Herb = {...FuelModelParticle,
 
 // Standard fuel models are differentiated by their fuel bed depth (ft), dead fuel
 // moisture content of extinction, and number and types of FuelParticles.
-
-// eslint-disable-next-line no-unused-vars
-const FuelModel = {
-    number: 0,      // a standard, assigned fuel model number, used as a lookup key
-    code: "",       // a standard, assigned fuel model alphanumeric code, also used as a lookup key
-    label: "",      // a brief label
-    group: "",      // one of "FBFM13", "FBFM40", "LANDFIRE", or "CUSTOM"
-    desc: "",       // a more detailed description of fuel vegetation, distribution, etc
-    depth: 0.4,     // fuel bed depth (ft)
-    deadMext: 0.15, // dead fuel "moisture content of extinction" (lb water / lb ovendry fuel)
-    particles: [],  // array of FuelParticle objects
+/**
+ * 
+ * @param {number} number a standard, assigned fuel model number, used as a lookup key
+ * @param {string} code a standard, assigned fuel model alphanumeric code, also used as a lookup key
+ * @param {string} label a brief label
+ * @param {string} source 'Anderson', 'Scott & Burgan', etc
+ * @param {string} desc a longer description
+ * @param {number} depth fuel bed depth (ft)
+ * @param {number} deadMext dead fuel moisture content of extinction (lb water /lb ovendry fuel)
+ * @param {array} particles array of FuelParticle objects
+ * @returns FuelModel object
+ */
+export function model(number, code, label, source, desc, depth, deadMext, particles=[]) {
+    return {number, code, label, source, desc, depth, deadMext, particles}
 }
 
 // ----------------------------------------------------------------------------
@@ -166,776 +189,476 @@ const FuelModel = {
 // ----------------------------------------------------------------------------
 
 export const FuelModels = [
-    { number: 0,
-        code: "none",
-        group: "FBFM13",
-        label: "No Fuel",
-        desc: "No fuel, unknown, undefined",
-        depth: 0,
-        deadMext: 0,
-        particles: [
+    model( 0, "none", "Anderson 1982", "No Fuel",
+        "No fuel, unknown, undefined",
+        0, 0, [
         ],
-    },
-    { number: 1,
-        code: "1",
-        group: "FBFM13",
-        label: "Short grass",
-        desc: "Surface fires that burn fine herbaceous fuels, cured and curing fuels, little shrub or timber present, primarily grasslands and savanna",
-        depth: 1,
-        deadMext: 0.12,
-        particles: [
-            {...Dead1, ovendryLoad: 0.034, savr: 3500, heat: 8000},
+    ),
+    model( 1, "1", "Anderson 1982", "Short grass",
+        "Surface fires that burn fine herbaceous fuels, cured and curing fuels, little shrub or timber present, primarily grasslands and savanna",
+        1, 0.12, [
+            dead1h(0.034, 3500, 8000),
         ],
-    },
-    { number: 2,
-        code: "2",
-        group: "FBFM13",
-        label: "Timber grass and understory",
-        desc: "Burns fine, herbaceous fuels, stand is curing or dead, may produce fire brands on oak or pine stands",
-        depth: 1,
-        deadMext: 0.15,
-        particles: [
-            {...Dead1, ovendryLoad: 0.092, savr: 3000, heat: 8000},
-            {...Dead10, ovendryLoad: 0.046, heat: 8000},
-            {...Dead100, ovendryLoad: 0.023, heat: 8000},
-            {...Stem, ovendryLoad: 0.023, savr: 1500, heat: 8000},
+    ),
+    model( 2, "2", "Anderson 1982", "Timber grass and understory",
+        "Burns fine, herbaceous fuels, stand is curing or dead, may produce fire brands on oak or pine stands",
+        1, 0.15, [
+            dead1h(0.092, 3000, 8000),
+            dead10h(0.046),
+            dead100h(0.023),
+            liveStem(0.023, 1500),
         ],
-    },
-    { number: 3,
-        code: "3",
-        group: "FBFM13",
-        label: "Tall grass",
-        desc: "Most intense fire of grass group, spreads quickly with wind, one third of stand dead or cured, stands average 3 ft tall",
-        depth: 2.5,
-        deadMext: 0.25,
-        particles: [
-            {...Dead1, ovendryLoad: 0.138, savr: 1500, heat: 8000},
+    ),
+    model( 3, "3", "Anderson 1982", "Tall grass",
+        "Most intense fire of grass group, spreads quickly with wind, one third of stand dead or cured, stands average 3 ft tall",
+        2.5, 0.25, [
+            dead1h(0.138, 1500, 8000),
         ],
-    },
-    { number: 4,
-        code: "4",
-        group: "FBFM13",
-        label: "Chaparral",
-        desc: "Fast spreading fire, continuous overstory, flammable foliage and dead woody material, deep litter layer can inhibit suppression",
-        depth: 6,
-        deadMext: 0.2,
-        particles: [
-            {...Dead1, ovendryLoad: 0.23, savr: 2000, heat: 8000},
-            {...Dead10, ovendryLoad: 0.184, heat: 8000},
-            {...Dead100, ovendryLoad: 0.092, heat: 8000},
-            {...Stem, ovendryLoad: 0.23, savr: 1500, heat: 8000}
+    ),
+    model( 4, "4", "Anderson 1982", "Chaparral",
+        "Fast spreading fire, continuous overstory, flammable foliage and dead woody material, deep litter layer can inhibit suppression",
+        6, 0.2, [
+            dead1h(0.23, 2000, 8000),
+            dead10h(0.184),
+            dead100h(0.092),
+            liveStem(0.23, 1500),
         ],
-    },
-    { number: 5,
-        code: "5",
-        group: "FBFM13",
-        label: "Brush",
-        desc: "Low intensity fires, young, green shrubs with little dead material, fuels consist of litter from understory",
-        depth: 2,
-        deadMext: 0.2,
-        particles: [
-            {...Dead1, ovendryLoad: 0.046, savr: 2000, heat: 8000},
-            {...Dead10, ovendryLoad: 0.023, heat: 8000},
-            {...Stem, ovendryLoad: 0.092, savr: 1500, heat: 8000}
+    ),
+    model( 5, "5", "Anderson 1982", "Brush",
+        "Low intensity fires, young, green shrubs with little dead material, fuels consist of litter from understory",
+        2, 0.2, [
+            dead1h(0.046, 2000, 8000),
+            dead10h(0.023),
+            liveStem(0.092, 1500),
         ],
-    },
-    { number: 6,
-        code: "6",
-        group: "FBFM13",
-        label: "Dormant brush, hardwood slash",
-        desc: "Broad range of shrubs, fire requires moderate winds to maintain flame at shrub height, or will drop to the ground with low winds",
-        depth: 2.5,
-        deadMext: 0.25,
-        particles: [
-            {...Dead1, ovendryLoad: 0.069, savr: 1750, heat: 8000},
-            {...Dead10, ovendryLoad: 0.115, heat: 8000},
-            {...Dead100, ovendryLoad: 0.092, heat: 8000},
+    ),
+    model( 6, "6", "Anderson 1982", "Dormant brush, hardwood slash",
+        "Broad range of shrubs, fire requires moderate winds to maintain flame at shrub height, or will drop to the ground with low winds",
+        2.5, 0.25, [
+            dead1h(0.069, 1750, 8000),
+            dead10h(0.115),
+            dead100h(0.092),
         ],
-    },
-    { number: 7,
-        code: "7",
-        group: "FBFM13",
-        label: "Southern rough",
-        desc: "Foliage highly flammable, allowing fire to reach shrub strata levels, shrubs generally 2 to 6 feet high",
-        depth: 2.5,
-        deadMext: 0.4,
-        particles: [
-            {...Dead1, ovendryLoad: 0.052, savr: 1750, heat: 8000},
-            {...Dead10, ovendryLoad: 0.086, heat: 8000},
-            {...Dead100, ovendryLoad: 0.069, heat: 8000},
-            {...Stem, ovendryLoad: 0.017, savr: 1500, heat: 8000}
+    ),
+    model( 7, "7", "Anderson 1982", "Southern rough",
+        "Foliage highly flammable, allowing fire to reach shrub strata levels, shrubs generally 2 to 6 feet high",
+        2.5, 0.4, [
+            dead1h(0.052, 1750, 8000),
+            dead10h(0.086),
+            dead100h(0.069),
+            liveStem(0.017, 1500),
         ],
-    },
-    { number: 8,
-        code: "8",
-        group: "FBFM13",
-        label: "Short needle litter",
-        desc: "Slow, ground burning fires, closed canopy stands with short needle conifers or hardwoods, litter consist mainly of needles and leaves, with little undergrowth, occasional flares with concentrated fuels",
-        depth: 0.2,
-        deadMext: 0.3,
-        particles: [
-            {...Dead1, ovendryLoad: 0.069, savr: 2000, heat: 8000},
-            {...Dead10, ovendryLoad: 0.046, heat: 8000},
-            {...Dead100, ovendryLoad: 0.115, heat: 8000},
+    ),
+    model( 8, "8", "Anderson 1982", "Short needle litter",
+        "Slow, ground burning fires, closed canopy stands with short needle conifers or hardwoods, litter consist mainly of needles and leaves, with little undergrowth, occasional flares with concentrated fuels",
+        0.2, 0.3, [
+            dead1h(0.069, 2000, 8000),
+            dead10h(0.046),
+            dead100h(0.115),
         ],
-    },
-    { number: 9,
-        code: "9",
-        group: "FBFM13",
-        label: "Long needle or hardwood litter",
-        desc: "Longer flames, quicker surface fires, closed canopy stands of long-needles or hardwoods, rolling leaves in fall can cause spotting, dead-down material can cause occasional crowning",
-        depth: 0.2,
-        deadMext: 0.25,
-        particles: [
-            {...Dead1, ovendryLoad: 0.134, savr: 2500, heat: 8000},
-            {...Dead10, ovendryLoad: 0.019, heat: 8000},
-            {...Dead100, ovendryLoad: 0.007, heat: 8000},
+    ),
+    model( 9, "9", "Anderson 1982", "Long needle or hardwood litter",
+        "Longer flames, quicker surface fires, closed canopy stands of long-needles or hardwoods, rolling leaves in fall can cause spotting, dead-down material can cause occasional crowning",
+        0.2, 0.25, [
+            dead1h(0.134, 2500, 8000),
+            dead10h(0.019),
+            dead100h(0.007),
         ],
-    },
-    { number: 10,
-        code: "10",
-        group: "FBFM13",
-        label: "Timber litter & understory",
-        desc: "Surface and ground fire more intense, dead-down fuels more abundant, frequent crowning and spotting causing fire control to be more difficult",
-        depth: 1,
-        deadMext: 0.25,
-        particles: [
-            {...Dead1, ovendryLoad: 0.138, savr: 2000, heat: 8000},
-            {...Dead10, ovendryLoad: 0.092, heat: 8000},
-            {...Dead100, ovendryLoad: 0.23, heat: 8000},
-            {...Stem, ovendryLoad: 0.092, savr: 1500, heat: 8000}
+    ),
+    model( 10, "10", "Anderson 1982", "Timber litter & understory",
+        "Surface and ground fire more intense, dead-down fuels more abundant, frequent crowning and spotting causing fire control to be more difficult",
+        1, 0.25, [
+            dead1h(0.138, 2000, 8000),
+            dead10h(0.092),
+            dead100h(0.23),
+            liveStem(0.092, 1500),
         ],
-    },
-    { number: 11,
-        code: "11",
-        group: "FBFM13",
-        label: "Light logging slash",
-        desc: "Fairly active fire, fuels consist of slash and herbaceous materials, slash originates from light partial cuts or thinning projects, fire is limited by spacing of fuel load and shade from overstory",
-        depth: 1,
-        deadMext: 0.15,
-        particles: [
-            {...Dead1, ovendryLoad: 0.069, savr: 1500, heat: 8000},
-            {...Dead10, ovendryLoad: 0.207, heat: 8000},
-            {...Dead100, ovendryLoad: 0.253, heat: 8000},
+    ),
+    model( 11, "11", "Anderson 1982", "Light logging slash",
+        "Fairly active fire, fuels consist of slash and herbaceous materials, slash originates from light partial cuts or thinning projects, fire is limited by spacing of fuel load and shade from overstory",
+        1, 0.15, [
+            dead1h(0.069, 1500, 8000),
+            dead10h(0.207),
+            dead100h(0.253),
         ],
-    },
-    { number: 12,
-        code: "12",
-        group: "FBFM13",
-        label: "Medium logging slash",
-        desc: "Rapid spreading and high intensity fires, dominated by slash resulting from heavy thinning projects and clearcuts, slash is mostly 3 inches or less",
-        depth: 2.3,
-        deadMext: 0.2,
-        particles: [
-            {...Dead1, ovendryLoad: 0.184, savr: 1500, heat: 8000},
-            {...Dead10, ovendryLoad: 0.644, heat: 8000},
-            {...Dead100, ovendryLoad: 0.759, heat: 8000},
+    ),
+    model( 12, "12", "Anderson 1982", "Medium logging slash",
+        "Rapid spreading and high intensity fires, dominated by slash resulting from heavy thinning projects and clearcuts, slash is mostly 3 inches or less",
+        2.3, 0.2, [
+            dead1h(0.184, 1500, 8000),
+            dead10h(0.644),
+            dead100h(0.759),
         ],
-    },
-    { number: 13,
-        code: "13",
-        group: "FBFM13",
-        label: "Heavy logging slash",
-        desc: "Fire spreads quickly through smaller material and intensity builds slowly as large material ignites, continuous layer of slash larger than 3 inches in diameter predominates, resulting from clearcuts and heavy partial cuts, active flames sustained for long periods of time, fire is susceptible to spotting and weather conditions",
-        depth: 3,
-        deadMext: 0.25,
-        particles: [
-            {...Dead1, ovendryLoad: 0.322, savr: 1500, heat: 8000},
-            {...Dead10, ovendryLoad: 1.058, heat: 8000},
-            {...Dead100, ovendryLoad: 1.288, heat: 8000},
+    ),
+    model( 13, "13", "Anderson 1982", "Heavy logging slash",
+        "Fire spreads quickly through smaller material and intensity builds slowly as large material ignites, continuous layer of slash larger than 3 inches in diameter predominates, resulting from clearcuts and heavy partial cuts, active flames sustained for long periods of time, fire is susceptible to spotting and weather conditions",
+        3, 0.25, [
+            dead1h(0.322, 1500, 8000),
+            dead10h(1.058),
+            dead100h(1.288),
         ],
-    },
-    { number: 91,
-        code: "nb1",
-        group: "LANDFIRE",
-        label: "Urban / Developed",
-        desc: "Urban/Developed",
-        depth: 0,
-        deadMext: 0,
-        particles: [
+    ),
+    model( 91, "nb1", "LANDFIRE", "Urban / Developed",
+        "Urban/Developed",
+        0, 0, [
         ],
-    },
-    { number: 92,
-        code: "nb2",
-        group: "LANDFIRE",
-        label: "Snow / Ice",
-        desc: "Snow/Ice",
-        depth: 0,
-        deadMext: 0,
-        particles: [
+    ),
+    model( 92, "nb2", "LANDFIRE", "Snow / Ice",
+        "Snow/Ice",
+        0, 0, [
         ],
-    },
-    { number: 93,
-        code: "nb3",
-        group: "LANDFIRE",
-        label: "Agriculture",
-        desc: "Agricultural",
-        depth: 0,
-        deadMext: 0,
-        particles: [
+    ),
+    model( 93, "nb3", "LANDFIRE", "Agriculture",
+        "Agricultural",
+        0, 0, [
         ],
-    },
-    { number: 98,
-        code: "nb8",
-        group: "LANDFIRE",
-        label: "Open Water",
-        desc: "Open Water",
-        depth: 0,
-        deadMext: 0,
-        particles: [
+    ),
+    model( 98, "nb8", "LANDFIRE", "Open Water",
+        "Open Water",
+        0, 0, [
         ],
-    },
-    { number: 99,
-        code: "nb9",
-        group: "LANDFIRE",
-        label: "Barren",
-        desc: "Barren",
-        depth: 0,
-        deadMext: 0,
-        particles: [
+    ),
+    model( 99, "nb9", "LANDFIRE", "Barren",
+        "Barren",
+        0, 0, [
         ],
-    },
-    { number: 101,
-        code: "gr1",
-        group: "FBFM40",
-        label: "Short, sparse, dry climate grass",
-        desc: "Short, sparse dry climate grass is short, naturally or heavy grazing, predicted rate of fire spread and flame length low ",
-        depth: 0.4,
-        deadMext: 0.15,
-        particles: [
-            {...Dead1, ovendryLoad: 0.004591368227731864, savr: 2200, heat: 8000},
-            {...Herb, ovendryLoad: 0.013774104683195591, savr: 2000, heat: 8000},
+    ),
+    model( 101, "gr1", "FBFM40", "Short, sparse, dry climate grass",
+        "Short, sparse dry climate grass is short, naturally or heavy grazing, predicted rate of fire spread and flame length low ",
+        0.4, 0.15, [
+            dead1h(0.004591368227731864, 2200, 8000),
+            curableHerb(0.013774104683195591, 2000, 8000),
         ],
-    },
-    { number: 102,
-        code: "gr2",
-        group: "FBFM40",
-        label: "Low load, dry climate grass",
-        desc: "Low load, dry climate grass primarily grass with some small amounts of fine, dead fuel, any shrubs do not affect fire behavior",
-        depth: 1,
-        deadMext: 0.15,
-        particles: [
-            {...Dead1, ovendryLoad: 0.004591368227731864, savr: 2000, heat: 8000},
-            {...Herb, ovendryLoad: 0.04591368227731864, savr: 1800, heat: 8000},
+    ),
+    model( 102, "gr2", "FBFM40", "Low load, dry climate grass",
+        "Low load, dry climate grass primarily grass with some small amounts of fine, dead fuel, any shrubs do not affect fire behavior",
+        1, 0.15, [
+            dead1h(0.004591368227731864, 2000, 8000),
+            curableHerb(0.04591368227731864, 1800, 8000),
         ],
-    },
-    { number: 103,
-        code: "gr3",
-        group: "FBFM40",
-        label: "Low load, very coarse, humid climate grass",
-        desc: "Low load, very coarse, humid climate grass continuous, coarse humid climate grass, any shrubs do not affect fire behavior",
-        depth: 2,
-        deadMext: 0.3,
-        particles: [
-            {...Dead1, ovendryLoad: 0.004591368227731864, savr: 1500, heat: 8000},
-            {...Dead10, ovendryLoad: 0.018365472910927456, heat: 8000},
-            {...Herb, ovendryLoad: 0.06887052341597796, savr: 1300, heat: 8000},
+    ),
+    model( 103, "gr3", "FBFM40", "Low load, very coarse, humid climate grass",
+        "Low load, very coarse, humid climate grass continuous, coarse humid climate grass, any shrubs do not affect fire behavior",
+        2, 0.3, [
+            dead1h(0.004591368227731864, 1500, 8000),
+            dead10h(0.018365472910927456),
+            curableHerb(0.06887052341597796, 1300, 8000),
         ],
-    },
-    { number: 104,
-        code: "gr4",
-        group: "FBFM40",
-        label: "Moderate load, dry climate grass",
-        desc: "Moderate load, dry climate grass, continuous, dry climate grass, fuelbed depth about 2 feet",
-        depth: 2,
-        deadMext: 0.15,
-        particles: [
-            {...Dead1, ovendryLoad: 0.01147842056932966, savr: 2000, heat: 8000},
-            {...Herb, ovendryLoad: 0.0872359963269054, savr: 1800, heat: 8000},
+    ),
+    model( 104, "gr4", "FBFM40", "Moderate load, dry climate grass",
+        "Moderate load, dry climate grass, continuous, dry climate grass, fuelbed depth about 2 feet",
+        2, 0.15, [
+            dead1h(0.01147842056932966, 2000, 8000),
+            curableHerb(0.0872359963269054, 1800, 8000),
         ],
-    },
-    { number: 105,
-        code: "gr5",
-        group: "FBFM40",
-        label: "Low load, humid climate grass",
-        desc: "Low load, humid climate grass, fuelbed depth is about 1-2 feet",
-        depth: 1.5,
-        deadMext: 0.4,
-        particles: [
-            {...Dead1, ovendryLoad: 0.018365472910927456, savr: 1800, heat: 8000},
-            {...Herb, ovendryLoad: 0.11478420569329659, savr: 1600, heat: 8000},
+    ),
+    model( 105, "gr5", "FBFM40", "Low load, humid climate grass",
+        "Low load, humid climate grass, fuelbed depth is about 1-2 feet",
+        1.5, 0.4, [
+            dead1h(0.018365472910927456, 1800, 8000),
+            curableHerb(0.11478420569329659, 1600, 8000),
         ],
-    },
-    { number: 106,
-        code: "gr6",
-        group: "FBFM40",
-        label: "Moderate load, humid climate grass",
-        desc: "Moderate load, continuous humid climate grass, not so coarse as GR5",
-        depth: 1.5,
-        deadMext: 0.4,
-        particles: [
-            {...Dead1, ovendryLoad: 0.004591368227731864, savr: 2200, heat: 9000},
-            {...Herb, ovendryLoad: 0.15610651974288337, savr: 2000, heat: 9000},
+    ),
+    model( 106, "gr6", "FBFM40", "Moderate load, humid climate grass",
+        "Moderate load, continuous humid climate grass, not so coarse as GR5",
+        1.5, 0.4, [
+            dead1h(0.004591368227731864, 2200, 9000),
+            curableHerb(0.15610651974288337, 2000, 9000),
         ],
-    },
-    { number: 107,
-        code: "gr7",
-        group: "FBFM40",
-        label: "High load, dry climate grass",
-        desc: "High load, continuous dry climate grass, grass is about 3 feet high",
-        depth: 3,
-        deadMext: 0.15,
-        particles: [
-            {...Dead1, ovendryLoad: 0.04591368227731864, savr: 2000, heat: 8000},
-            {...Herb, ovendryLoad: 0.24793388429752067, savr: 1800, heat: 8000},
+    ),
+    model( 107, "gr7", "FBFM40", "High load, dry climate grass",
+        "High load, continuous dry climate grass, grass is about 3 feet high",
+        3, 0.15, [
+            dead1h(0.04591368227731864, 2000, 8000),
+            curableHerb(0.24793388429752067, 1800, 8000),
         ],
-    },
-    { number: 108,
-        code: "gr8",
-        group: "FBFM40",
-        label: "High load, very coarse, humid climate grass",
-        desc: "High load, very coarse, continuous, humid climate grass, spread rate and flame length may be extreme if grass is fully cured",
-        depth: 4,
-        deadMext: 0.3,
-        particles: [
-            {...Dead1, ovendryLoad: 0.02295684113865932, savr: 1500, heat: 8000},
-            {...Dead10, ovendryLoad: 0.0459139, heat: 8000},
-            {...Herb, ovendryLoad: 0.33516988062442604, savr: 1300, heat: 8000},
+    ),
+    model( 108, "gr8", "FBFM40", "High load, very coarse, humid climate grass",
+        "High load, very coarse, continuous, humid climate grass, spread rate and flame length may be extreme if grass is fully cured",
+        4, 0.3, [
+            dead1h(0.02295684113865932, 1500, 8000),
+            dead10h(0.0459139),
+            curableHerb(0.33516988062442604, 1300, 8000),
         ],
-    },
-    { number: 109,
-        code: "gr9",
-        group: "FBFM40",
-        label: "Very high load, humid climate grass",
-        desc: "Very high load, dense, tall, humid climate grass, about 6 feet tall, spread rate and flame length can be extreme if grass is fully cured",
-        depth: 5,
-        deadMext: 0.4,
-        particles: [
-            {...Dead1, ovendryLoad: 0.04591368227731864, savr: 1800, heat: 8000},
-            {...Dead10, ovendryLoad: 0.04591368227731864, heat: 8000},
-            {...Herb, ovendryLoad: 0.4132231404958677, savr: 1600, heat: 8000},
+    ),
+    model( 109, "gr9", "FBFM40", "Very high load, humid climate grass",
+        "Very high load, dense, tall, humid climate grass, about 6 feet tall, spread rate and flame length can be extreme if grass is fully cured",
+        5, 0.4, [
+            dead1h(0.04591368227731864, 1800, 8000),
+            dead10h(0.04591368227731864),
+            curableHerb(0.4132231404958677, 1600, 8000),
         ],
-    },
-    { number: 121,
-        code: "gs1",
-        group: "FBFM40",
-        label: "Low load, dry climate grass-shrub",
-        desc: "Low load, dry climate grass-shrub shrub about 1 foot high, grass load low, spread rate moderate and flame length low",
-        depth: 0.9,
-        deadMext: 0.15,
-        particles: [
-            {...Dead1, ovendryLoad: 0.009182736455463728, savr: 2000, heat: 8000},
-            {...Herb, ovendryLoad: 0.02295684113865932, savr: 1800, heat: 8000},
-            {...Stem, ovendryLoad: 0.02984403, savr: 1800, heat: 8000}
+    ),
+    model( 121, "gs1", "FBFM40", "Low load, dry climate grass-shrub",
+        "Low load, dry climate grass-shrub shrub about 1 foot high, grass load low, spread rate moderate and flame length low",
+        0.9, 0.15, [
+            dead1h(0.009182736455463728, 2000, 8000),
+            curableHerb(0.02295684113865932, 1800, 8000),
+            liveStem(0.02984403, 1800),
         ],
-    },
-    { number: 122,
-        code: "gs2",
-        group: "FBFM40",
-        label: "Moderate load, dry climate grass-shrub",
-        desc: "Moderate load, dry climate grass-shrub, shrubs are 1-3 feet high, grass load moderate, spread rate high, and flame length is moderate",
-        depth: 1.5,
-        deadMext: 0.15,
-        particles: [
-            {...Dead1, ovendryLoad: 0.02295684113865932, savr: 2000, heat: 8000},
-            {...Dead10, ovendryLoad: 0.02295684113865932, heat: 8000},
-            {...Herb, ovendryLoad: 0.027548209366391182, savr: 1800, heat: 8000},
-            {...Stem, ovendryLoad: 0.04591368227731864, savr: 1800, heat: 8000}
+    ),
+    model( 122, "gs2", "FBFM40", "Moderate load, dry climate grass-shrub",
+        "Moderate load, dry climate grass-shrub, shrubs are 1-3 feet high, grass load moderate, spread rate high, and flame length is moderate",
+        1.5, 0.15, [
+            dead1h(0.02295684113865932, 2000, 8000),
+            dead10h(0.02295684113865932),
+            curableHerb(0.027548209366391182, 1800, 8000),
+            liveStem(0.04591368227731864, 1800),
         ],
-    },
-    { number: 123,
-        code: "gs3",
-        group: "FBFM40",
-        label: "Moderate load, humid climate grass-shrub",
-        desc: "Moderate load, humid climate grass-shrub, moderate grass/shrub load, grass/shrub depth is less than 2 feet, spread rate is high and flame length is moderate",
-        depth: 1.8,
-        deadMext: 0.4,
-        particles: [
-            {...Dead1, ovendryLoad: 0.013774104683195591, savr: 1800, heat: 8000},
-            {...Dead10, ovendryLoad: 0.01147842056932966, heat: 8000},
-            {...Herb, ovendryLoad: 0.06657483930211203, savr: 1600, heat: 8000},
-            {...Stem, ovendryLoad: 0.057392102846648294, savr: 1600, heat: 8000}
+    ),
+    model( 123, "gs3", "FBFM40", "Moderate load, humid climate grass-shrub",
+        "Moderate load, humid climate grass-shrub, moderate grass/shrub load, grass/shrub depth is less than 2 feet, spread rate is high and flame length is moderate",
+        1.8, 0.4, [
+            dead1h(0.013774104683195591, 1800, 8000),
+            dead10h(0.01147842056932966),
+            curableHerb(0.06657483930211203, 1600, 8000),
+            liveStem(0.057392102846648294, 1600),
         ],
-    },
-    { number: 124,
-        code: "gs4",
-        group: "FBFM40",
-        label: "High load, humid climate grass-shrub",
-        desc: "High load, humid climate grass-shrub, heavy grass/shrub load, depth is greater than 2 feet, spread rate is high and flame length very high",
-        depth: 2.1,
-        deadMext: 0.4,
-        particles: [
-            {...Dead1, ovendryLoad: 0.0872359963269054, savr: 1800, heat: 8000},
-            {...Dead10, ovendryLoad: 0.013774104683195591, heat: 8000},
-            {...Dead100, ovendryLoad: 0.004591368227731864, heat: 8000},
-            {...Herb, ovendryLoad: 0.15610651974288337, savr: 1600, heat: 8000},
-            {...Stem, ovendryLoad: 0.3259871441689623, savr: 1600, heat: 8000}
+    ),
+    model( 124, "gs4", "FBFM40", "High load, humid climate grass-shrub",
+        "High load, humid climate grass-shrub, heavy grass/shrub load, depth is greater than 2 feet, spread rate is high and flame length very high",
+        2.1, 0.4, [
+            dead1h(0.0872359963269054, 1800, 8000),
+            dead10h(0.013774104683195591),
+            dead100h(0.004591368227731864),
+            curableHerb(0.15610651974288337, 1600, 8000),
+            liveStem(0.3259871441689623, 1600),
         ],
-    },
-    { number: 141,
-        code: "sh1",
-        group: "FBFM40",
-        label: "Low load, dry climate shrub",
-        desc: "Low load dry climate shrub, woody shrubs and shrub litter, fuelbed depth about 1 foot, may be some grass, spread rate and flame low",
-        depth: 1,
-        deadMext: 0.15,
-        particles: [
-            {...Dead1, ovendryLoad: 0.01147842056932966, savr: 2000, heat: 8000},
-            {...Dead10, ovendryLoad: 0.01147842056932966, heat: 8000},
-            {...Herb, ovendryLoad: 0.0068870523415977955, savr: 1800, heat: 8000},
-            {...Stem, ovendryLoad: 0.05968778696051423, savr: 1600, heat: 8000}
+    ),
+    model( 141, "sh1", "FBFM40", "Low load, dry climate shrub",
+        "Low load dry climate shrub, woody shrubs and shrub litter, fuelbed depth about 1 foot, may be some grass, spread rate and flame low",
+        1, 0.15, [
+            dead1h(0.01147842056932966, 2000, 8000),
+            dead10h(0.01147842056932966),
+            curableHerb(0.0068870523415977955, 1800, 8000),
+            liveStem(0.05968778696051423, 1600),
         ],
-    },
-    { number: 142,
-        code: "sh2",
-        group: "FBFM40",
-        label: "Moderate load, dry climate shrub",
-        desc: "Moderate load dry climate shrub, woody shrubs and shrub litter, fuelbed depth about 1 foot, no grass, spread rate and flame low",
-        depth: 1,
-        deadMext: 0.15,
-        particles: [
-            {...Dead1, ovendryLoad: 0.06198347107438017, savr: 2000, heat: 8000},
-            {...Dead10, ovendryLoad: 0.11019283746556473, heat: 8000},
-            {...Dead100, ovendryLoad: 0.03443526170798898, heat: 8000},
-            {...Stem, ovendryLoad: 0.17676767676767677, savr: 1600, heat: 8000}
+    ),
+    model( 142, "sh2", "FBFM40", "Moderate load, dry climate shrub",
+        "Moderate load dry climate shrub, woody shrubs and shrub litter, fuelbed depth about 1 foot, no grass, spread rate and flame low",
+        1, 0.15, [
+            dead1h(0.06198347107438017, 2000, 8000),
+            dead10h(0.11019283746556473),
+            dead100h(0.03443526170798898),
+            liveStem(0.17676767676767677, 1600),
         ],
-    },
-    { number: 143,
-        code: "sh3",
-        group: "FBFM40",
-        label: "Moderate load, humid climate shrub",
-        desc: "Moderate load, humid climate shrub, woody shrubs and shrub litter, possible pine overstory, fuelbed depth 2-3 feet, spread rate and flame low",
-        depth: 2.4,
-        deadMext: 0.4,
-        particles: [
-            {...Dead1, ovendryLoad: 0.02066115702479339, savr: 1600, heat: 8000},
-            {...Dead10, ovendryLoad: 0.13774104683195593, heat: 8000},
-            {...Stem, ovendryLoad: 0.28466483011937554, savr: 1400, heat: 8000}
+    ),
+    model( 143, "sh3", "FBFM40", "Moderate load, humid climate shrub",
+        "Moderate load, humid climate shrub, woody shrubs and shrub litter, possible pine overstory, fuelbed depth 2-3 feet, spread rate and flame low",
+        2.4, 0.4, [
+            dead1h(0.02066115702479339, 1600, 8000),
+            dead10h(0.13774104683195593),
+            liveStem(0.28466483011937554, 1400),
         ],
-    },
-    { number: 144,
-        code: "sh4",
-        group: "FBFM40",
-        label: "Low load, humid climate timber-shrub",
-        desc: "Low load, humid climate timber shrub, woody shrubs and shrub litter, low to moderate load, possible pine overstory, fuelbed depth about 3 feet, spread rate high and flame moderate",
-        depth: 3,
-        deadMext: 0.3,
-        particles: [
-            {...Dead1, ovendryLoad: 0.03902662993572084, savr: 2000, heat: 8000},
-            {...Dead10, ovendryLoad: 0.05280073461891643, heat: 8000},
-            {...Dead100, ovendryLoad: 0.009182736455463728, heat: 8000},
-            {...Stem, ovendryLoad: 0.11707988980716252, savr: 1600, heat: 8000}
+    ),
+    model( 144, "sh4", "FBFM40", "Low load, humid climate timber-shrub",
+        "Low load, humid climate timber shrub, woody shrubs and shrub litter, low to moderate load, possible pine overstory, fuelbed depth about 3 feet, spread rate high and flame moderate",
+        3, 0.3, [
+            dead1h(0.03902662993572084, 2000, 8000),
+            dead10h(0.05280073461891643),
+            dead100h(0.009182736455463728),
+            liveStem(0.11707988980716252, 1600),
         ],
-    },
-    { number: 145,
-        code: "sh5",
-        group: "FBFM40",
-        label: "High load, dry climate shrub",
-        desc: "High load, dry climate shrub litter and woody shrubs, heavy load with depth 4-6 feet, spread rate and flame very high, moisture extinction high",
-        depth: 6,
-        deadMext: 0.15,
-        particles: [
-            {...Dead1, ovendryLoad: 0.1652892561983471, savr: 750, heat: 8000},
-            {...Dead10, ovendryLoad: 0.09641873278236915, heat: 8000},
-            {...Stem, ovendryLoad: 0.13314967860422405, savr: 1600, heat: 8000}
+    ),
+    model( 145, "sh5", "FBFM40", "High load, dry climate shrub",
+        "High load, dry climate shrub litter and woody shrubs, heavy load with depth 4-6 feet, spread rate and flame very high, moisture extinction high",
+        6, 0.15, [
+            dead1h(0.1652892561983471, 750, 8000),
+            dead10h(0.09641873278236915),
+            liveStem(0.13314967860422405, 1600),
         ],
-    },
-    { number: 146,
-        code: "sh6",
-        group: "FBFM40",
-        label: "Low load, humid climate shrub",
-        desc: "Low load, humid climate shrub, woody shrubs and shrub litter, dense shrubs, little or no herbaceous fuel, depth about 2 feet, spread rate and flame high",
-        depth: 2,
-        deadMext: 0.3,
-        particles: [
-            {...Dead1, ovendryLoad: 0.13314967860422405, savr: 750, heat: 8000},
-            {...Dead10, ovendryLoad: 0.06657483930211203, heat: 8000},
-            {...Stem, ovendryLoad: 0.06427915518824609, savr: 1600, heat: 8000}
+    ),
+    model( 146, "sh6", "FBFM40", "Low load, humid climate shrub",
+        "Low load, humid climate shrub, woody shrubs and shrub litter, dense shrubs, little or no herbaceous fuel, depth about 2 feet, spread rate and flame high",
+        2, 0.3, [
+            dead1h(0.13314967860422405, 750, 8000),
+            dead10h(0.06657483930211203),
+            liveStem(0.06427915518824609, 1600),
         ],
-    },
-    { number: 147,
-        code: "sh7",
-        group: "FBFM40",
-        label: "Very high load, dry climate shrub",
-        desc: "Very high load, dry climate shrub, woody shrubs and shrub litter, very heavy shrub load, depth 4-6 feet, spread rate somewhat lower than SH6 and flame very high",
-        depth: 6,
-        deadMext: 0.15,
-        particles: [
-            {...Dead1, ovendryLoad: 0.16069788797061524, savr: 750, heat: 8000},
-            {...Dead10, ovendryLoad: 0.24334251606978877, heat: 8000},
-            {...Dead100, ovendryLoad: 0.10101010101010101, heat: 8000},
-            {...Stem, ovendryLoad: 0.15610651974288337, savr: 1600, heat: 8000}
+    ),
+    model( 147, "sh7", "FBFM40", "Very high load, dry climate shrub",
+        "Very high load, dry climate shrub, woody shrubs and shrub litter, very heavy shrub load, depth 4-6 feet, spread rate somewhat lower than SH6 and flame very high",
+        6, 0.15, [
+            dead1h(0.16069788797061524, 750, 8000),
+            dead10h(0.24334251606978877),
+            dead100h(0.10101010101010101),
+            liveStem(0.15610651974288337, 1600),
         ],
-    },
-    { number: 148,
-        code: "sh8",
-        group: "FBFM40",
-        label: "High load, humid climate shrub",
-        desc: "High load, humid climate shrub, woody shrubs and shrub litter, dense shrubs, little or no herbaceous fuel, depth about 3 feet, spread rate and flame high",
-        depth: 3,
-        deadMext: 0.4,
-        particles: [
-            {...Dead1, ovendryLoad: 0.0941230486685032, savr: 750, heat: 8000},
-            {...Dead10, ovendryLoad: 0.15610651974288337, heat: 8000},
-            {...Dead100, ovendryLoad: 0.03902662993572084, heat: 8000},
-            {...Stem, ovendryLoad: 0.19972451790633605, savr: 1600, heat: 8000}
+    ),
+    model( 148, "sh8", "FBFM40", "High load, humid climate shrub",
+        "High load, humid climate shrub, woody shrubs and shrub litter, dense shrubs, little or no herbaceous fuel, depth about 3 feet, spread rate and flame high",
+        3, 0.4, [
+            dead1h(0.0941230486685032, 750, 8000),
+            dead10h(0.15610651974288337),
+            dead100h(0.03902662993572084),
+            liveStem(0.19972451790633605, 1600),
         ],
-    },
-    { number: 149,
-        code: "sh9",
-        group: "FBFM40",
-        label: "Very high load, humid climate shrub",
-        desc: "Very high load, humid climate shrub, woody shrubs and shrub litter, dense finely branched shrubs with fine dead fuel, 4-6 feet tall, herbaceous may be present, spread rate and flame high",
-        depth: 4.4,
-        deadMext: 0.4,
-        particles: [
-            {...Dead1, ovendryLoad: 0.20661157024793386, savr: 750, heat: 8000},
-            {...Dead10, ovendryLoad: 0.11248852157943066, heat: 8000},
-            {...Herb, ovendryLoad: 0.07116620752984389, savr: 1800, heat: 8000},
-            {...Stem, ovendryLoad: 0.3213957759412305, savr: 1500, heat: 8000}
+    ),
+    model( 149, "sh9", "FBFM40", "Very high load, humid climate shrub",
+        "Very high load, humid climate shrub, woody shrubs and shrub litter, dense finely branched shrubs with fine dead fuel, 4-6 feet tall, herbaceous may be present, spread rate and flame high",
+        4.4, 0.4, [
+            dead1h(0.20661157024793386, 750, 8000),
+            dead10h(0.11248852157943066),
+            curableHerb(0.07116620752984389, 1800, 8000),
+            liveStem(0.3213957759412305, 1500),
         ],
-    },
-    { number: 161,
-        code: "tu1",
-        group: "FBFM40",
-        label: "Light load, dry climate timber-grass-shrub",
-        desc: "Low load dry climate timber grass shrub, low load of grass and/or shrub with litter, spread rate and flame low",
-        depth: 0.6,
-        deadMext: 0.2,
-        particles: [
-            {...Dead1, ovendryLoad: 0.009182736455463728, savr: 2000, heat: 8000},
-            {...Dead10, ovendryLoad: 0.04132231404958678, heat: 8000},
-            {...Dead100, ovendryLoad: 0.06887052341597796, heat: 8000},
-            {...Herb, ovendryLoad: 0.009182736455463728, savr: 1800, heat: 8000},
-            {...Stem, ovendryLoad: 0.04132231404958678, savr: 1600, heat: 8000}
+    ),
+    model( 161, "tu1", "FBFM40", "Light load, dry climate timber-grass-shrub",
+        "Low load dry climate timber grass shrub, low load of grass and/or shrub with litter, spread rate and flame low",
+        0.6, 0.2, [
+            dead1h(0.009182736455463728, 2000, 8000),
+            dead10h(0.04132231404958678),
+            dead100h(0.06887052341597796),
+            curableHerb(0.009182736455463728, 1800, 8000),
+            liveStem(0.04132231404958678, 1600),
         ],
-    },
-    { number: 162,
-        code: "tu2",
-        group: "FBFM40",
-        label: "Moderate load, humid climate timber-shrub",
-        desc: "Moderate load, humid climate timber-shrub, moderate litter load with some shrub, spread rate moderate and flame low",
-        depth: 1,
-        deadMext: 0.3,
-        particles: [
-            {...Dead1, ovendryLoad: 0.0436179981634527, savr: 2000, heat: 8000},
-            {...Dead10, ovendryLoad: 0.08264462809917356, heat: 8000},
-            {...Dead100, ovendryLoad: 0.057392102846648294, heat: 8000},
-            {...Stem, ovendryLoad: 0.009182736455463728, savr: 1600, heat: 8000}
+    ),
+    model( 162, "tu2", "FBFM40", "Moderate load, humid climate timber-shrub",
+        "Moderate load, humid climate timber-shrub, moderate litter load with some shrub, spread rate moderate and flame low",
+        1, 0.3, [
+            dead1h(0.0436179981634527, 2000, 8000),
+            dead10h(0.08264462809917356),
+            dead100h(0.057392102846648294),
+            liveStem(0.009182736455463728, 1600),
         ],
-    },
-    { number: 163,
-        code: "tu3",
-        group: "FBFM40",
-        label: "Moderate load, humid climate timber-grass-shrub",
-        desc: "Moderate load, humid climate timber grass shrub, moderate forest litter with some grass and shrub, spread rate high and flame moderate",
-        depth: 1.3,
-        deadMext: 0.3,
-        particles: [
-            {...Dead1, ovendryLoad: 0.050505050505050504, savr: 1800, heat: 8000},
-            {...Dead10, ovendryLoad: 0.0068870523415977955, heat: 8000},
-            {...Dead100, ovendryLoad: 0.01147842056932966, heat: 8000},
-            {...Herb, ovendryLoad: 0.029843893480257115, savr: 1600, heat: 8000},
-            {...Stem, ovendryLoad: 0.050505050505050504, savr: 1400, heat: 8000}
+    ),
+    model( 163, "tu3", "FBFM40", "Moderate load, humid climate timber-grass-shrub",
+        "Moderate load, humid climate timber grass shrub, moderate forest litter with some grass and shrub, spread rate high and flame moderate",
+        1.3, 0.3, [
+            dead1h(0.050505050505050504, 1800, 8000),
+            dead10h(0.0068870523415977955),
+            dead100h(0.01147842056932966),
+            curableHerb(0.029843893480257115, 1600, 8000),
+            liveStem(0.050505050505050504, 1400),
         ],
-    },
-    { number: 164,
-        code: "tu4",
-        group: "FBFM40",
-        label: "Dwarf conifer understory",
-        desc: "Dwarf conifer with understory, short conifer trees with grass or moss understory, spread rate and flame moderate",
-        depth: 0.5,
-        deadMext: 0.12,
-        particles: [
-            {...Dead1, ovendryLoad: 0.20661157024793386, savr: 2300, heat: 8000},
-            {...Stem, ovendryLoad: 0.09182736455463728, savr: 2000, heat: 8000}
+    ),
+    model( 164, "tu4", "FBFM40", "Dwarf conifer understory",
+        "Dwarf conifer with understory, short conifer trees with grass or moss understory, spread rate and flame moderate",
+        0.5, 0.12, [
+            dead1h(0.20661157024793386, 2300, 8000),
+            liveStem(0.09182736455463728, 2000),
         ],
-    },
-    { number: 165,
-        code: "tu5",
-        group: "FBFM40",
-        label: "Very high load, dry climate timber-shrub",
-        desc: "Very high load, dry climate timber shrub, heavy forest litter with shrub or small tree understory, spread rate and flame moderate",
-        depth: 1,
-        deadMext: 0.25,
-        particles: [
-            {...Dead1, ovendryLoad: 0.18365472910927455, savr: 1500, heat: 8000},
-            {...Dead10, ovendryLoad: 0.18365472910927455, heat: 8000},
-            {...Dead100, ovendryLoad: 0.13774104683195593, heat: 8000},
-            {...Stem, ovendryLoad: 0.13774104683195593, savr: 750, heat: 8000}
+    ),
+    model( 165, "tu5", "FBFM40", "Very high load, dry climate timber-shrub",
+        "Very high load, dry climate timber shrub, heavy forest litter with shrub or small tree understory, spread rate and flame moderate",
+        1, 0.25, [
+            dead1h(0.18365472910927455, 1500, 8000),
+            dead10h(0.18365472910927455),
+            dead100h(0.13774104683195593),
+            liveStem(0.13774104683195593, 750),
         ],
-    },
-    { number: 181,
-        code: "tl1",
-        group: "FBFM40",
-        label: "Low load, compact conifer litter",
-        desc: "Low load compact conifer litter, compact forest litter, light to moderate load, 1-2 inches deep, may represent a recent burn, spread rate and flame low",
-        depth: 0.2,
-        deadMext: 0.3,
-        particles: [
-            {...Dead1, ovendryLoad: 0.04591368227731864, savr: 2000, heat: 8000},
-            {...Dead10, ovendryLoad: 0.10101010101010101, heat: 8000},
-            {...Dead100, ovendryLoad: 0.1652892561983471, heat: 8000},
+    ),
+    model( 181, "tl1", "FBFM40", "Low load, compact conifer litter",
+        "Low load compact conifer litter, compact forest litter, light to moderate load, 1-2 inches deep, may represent a recent burn, spread rate and flame low",
+        0.2, 0.3, [
+            dead1h(0.04591368227731864, 2000, 8000),
+            dead10h(0.10101010101010101),
+            dead100h(0.1652892561983471),
         ],
-    },
-    { number: 182,
-        code: "tl2",
-        group: "FBFM40",
-        label: "Low load broadleaf litter",
-        desc: "Low load broadleaf litter, broadleaf, hardwood litter, spread rate and flame low",
-        depth: 0.2,
-        deadMext: 0.25,
-        particles: [
-            {...Dead1, ovendryLoad: 0.06427915518824609, savr: 2000, heat: 8000},
-            {...Dead10, ovendryLoad: 0.10560146923783285, heat: 8000},
-            {...Dead100, ovendryLoad: 0.10101010101010101, heat: 8000},
+    ),
+    model( 182, "tl2", "FBFM40", "Low load broadleaf litter",
+        "Low load broadleaf litter, broadleaf, hardwood litter, spread rate and flame low",
+        0.2, 0.25, [
+            dead1h(0.06427915518824609, 2000, 8000),
+            dead10h(0.10560146923783285),
+            dead100h(0.10101010101010101),
         ],
-    },
-    { number: 183,
-        code: "tl3",
-        group: "FBFM40",
-        label: "Moderate load conifer litter",
-        desc: "Moderate load conifer litter, moderate load conifer litter, light load of coarse fuels, spread rate is very low and flame low",
-        depth: 0.3,
-        deadMext: 0.2,
-        particles: [
-            {...Dead1, ovendryLoad: 0.02295684113865932, savr: 2000, heat: 8000},
-            {...Dead10, ovendryLoad: 0.10101010101010101, heat: 8000},
-            {...Dead100, ovendryLoad: 0.12855831037649218, heat: 8000},
+    ),
+    model( 183, "tl3", "FBFM40", "Moderate load conifer litter",
+        "Moderate load conifer litter, moderate load conifer litter, light load of coarse fuels, spread rate is very low and flame low",
+        0.3, 0.2, [
+            dead1h(0.02295684113865932, 2000, 8000),
+            dead10h(0.10101010101010101),
+            dead100h(0.12855831037649218),
         ],
-    },
-    { number: 184,
-        code: "tl4",
-        group: "FBFM40",
-        label: "Small downed logs",
-        desc: "Small downed logs moderate load of fine litter and coarse fuels, small diameter downed logs, spread rate and flame low",
-        depth: 0.4,
-        deadMext: 0.25,
-        particles: [
-            {...Dead1, ovendryLoad: 0.02295684113865932, savr: 2000, heat: 8000},
-            {...Dead10, ovendryLoad: 0.06887052341597796, heat: 8000},
-            {...Dead100, ovendryLoad: 0.1928374655647383, heat: 8000},
+    ),
+    model( 184, "tl4", "FBFM40", "Small downed logs",
+        "Small downed logs moderate load of fine litter and coarse fuels, small diameter downed logs, spread rate and flame low",
+        0.4, 0.25, [
+            dead1h(0.02295684113865932, 2000, 8000),
+            dead10h(0.06887052341597796),
+            dead100h(0.1928374655647383),
         ],
-    },
-    { number: 185,
-        code: "tl5",
-        group: "FBFM40",
-        label: "High load conifer litter",
-        desc: "High load conifer litter, light slash or dead fuel, spread rate and flame low",
-        depth: 0.6,
-        deadMext: 0.25,
-        particles: [
-            {...Dead1, ovendryLoad: 0.05280073461891643, savr: 2000, heat: 8000},
-            {...Dead10, ovendryLoad: 0.11478420569329659, heat: 8000},
-            {...Dead100, ovendryLoad: 0.20202020202020202, heat: 8000},
+    ),
+    model( 185, "tl5", "FBFM40", "High load conifer litter",
+        "High load conifer litter, light slash or dead fuel, spread rate and flame low",
+        0.6, 0.25, [
+            dead1h(0.05280073461891643, 2000, 8000),
+            dead10h(0.11478420569329659),
+            dead100h(0.20202020202020202),
         ],
-    },
-    { number: 186,
-        code: "tl6",
-        group: "FBFM40",
-        label: "High load broadleaf litter",
-        desc: "Moderate load broadleaf litter, spread rate and flame moderate",
-        depth: 0.3,
-        deadMext: 0.25,
-        particles: [
-            {...Dead1, ovendryLoad: 0.11019283746556473, savr: 2000, heat: 8000},
-            {...Dead10, ovendryLoad: 0.055096418732782364, heat: 8000},
-            {...Dead100, ovendryLoad: 0.055096418732782364, heat: 8000},
+    ),
+    model( 186, "tl6", "FBFM40", "High load broadleaf litter",
+        "Moderate load broadleaf litter, spread rate and flame moderate",
+        0.3, 0.25, [
+            dead1h(0.11019283746556473, 2000, 8000),
+            dead10h(0.055096418732782364),
+            dead100h(0.055096418732782364),
         ],
-    },
-    { number: 187,
-        code: "tl7",
-        group: "FBFM40",
-        label: "Large downed logs",
-        desc: "Large downed logs, heavy load forest litter, larger diameter downed logs, spread rate and flame low",
-        depth: 0.4,
-        deadMext: 0.25,
-        particles: [
-            {...Dead1, ovendryLoad: 0.013774104683195591, savr: 2000, heat: 8000},
-            {...Dead10, ovendryLoad: 0.06427915518824609, heat: 8000},
-            {...Dead100, ovendryLoad: 0.371900826446281, heat: 8000},
+    ),
+    model( 187, "tl7", "FBFM40", "Large downed logs",
+        "Large downed logs, heavy load forest litter, larger diameter downed logs, spread rate and flame low",
+        0.4, 0.25, [
+            dead1h(0.013774104683195591, 2000, 8000),
+            dead10h(0.06427915518824609),
+            dead100h(0.371900826446281),
         ],
-    },
-    { number: 188,
-        code: "tl8",
-        group: "FBFM40",
-        label: "Long-needle litter",
-        desc: "Long needle litter, moderate load long needle pine litter, may have small amounts of herbaceous fuel, spread rate moderate and flame low",
-        depth: 0.3,
-        deadMext: 0.35,
-        particles: [
-            {...Dead1, ovendryLoad: 0.2662993572084481, savr: 1800, heat: 8000},
-            {...Dead10, ovendryLoad: 0.06427915518824609, heat: 8000},
-            {...Dead100, ovendryLoad: 0.050505050505050504, heat: 8000},
+    ),
+    model( 188, "tl8", "FBFM40", "Long-needle litter",
+        "Long needle litter, moderate load long needle pine litter, may have small amounts of herbaceous fuel, spread rate moderate and flame low",
+        0.3, 0.35, [
+            dead1h(0.2662993572084481, 1800, 8000),
+            dead10h(0.06427915518824609),
+            dead100h(0.050505050505050504),
         ],
-    },
-    { number: 189,
-        code: "tl9",
-        group: "FBFM40",
-        label: "Very high load broadleaf litter",
-        desc: "Very high load broadleaf litter, may be heavy needle drape, spread rate and flame moderate",
-        depth: 0.6,
-        deadMext: 0.35,
-        particles: [
-            {...Dead1, ovendryLoad: 0.305325987144169, savr: 1800, heat: 8000},
-            {...Dead10, ovendryLoad: 0.1515151515151515, heat: 8000},
-            {...Dead100, ovendryLoad: 0.19054178145087236, heat: 8000},
+    ),
+    model( 189, "tl9", "FBFM40", "Very high load broadleaf litter",
+        "Very high load broadleaf litter, may be heavy needle drape, spread rate and flame moderate",
+        0.6, 0.35, [
+            dead1h(0.305325987144169, 1800, 8000),
+            dead10h(0.1515151515151515),
+            dead100h(0.19054178145087236),
         ],
-    },
-    { number: 201,
-        code: "sb1",
-        group: "FBFM40",
-        label: "Low load activity fuel",
-        desc: "Low load activity fuel, light dead and down activity fuel, fine fuel is 10-20 t/ac, 1-3 inches in diameter, depth < 1 foot, spread rate moderate and flame low",
-        depth: 1,
-        deadMext: 0.25,
-        particles: [
-            {...Dead1, ovendryLoad: 0.06887052341597796, savr: 2000, heat: 8000},
-            {...Dead10, ovendryLoad: 0.13774104683195593, heat: 8000},
-            {...Dead100, ovendryLoad: 0.505050505050505, heat: 8000},
+    ),
+    model( 201, "sb1", "FBFM40", "Low load activity fuel",
+        "Low load activity fuel, light dead and down activity fuel, fine fuel is 10-20 t/ac, 1-3 inches in diameter, depth < 1 foot, spread rate moderate and flame low",
+        1, 0.25, [
+            dead1h(0.06887052341597796, 2000, 8000),
+            dead10h(0.13774104683195593),
+            dead100h(0.505050505050505),
         ],
-    },
-    { number: 202,
-        code: "sb2",
-        group: "FBFM40",
-        label: "Moderate load activity or low load blowdown",
-        desc: "Moderate load activity fuel or low load blowdown, 7-12 t/ac, 0-3 inch diameter class, depth about 1 foot, blowdown scattered with many still standing, spread rate moderate and flame low",
-        depth: 1,
-        deadMext: 0.25,
-        particles: [
-            {...Dead1, ovendryLoad: 0.20661157024793386, savr: 2000, heat: 8000},
-            {...Dead10, ovendryLoad: 0.1951331496786042, heat: 8000},
-            {...Dead100, ovendryLoad: 0.18365472910927455, heat: 8000},
+    ),
+    model( 202, "sb2", "FBFM40", "Moderate load activity or low load blowdown",
+        "Moderate load activity fuel or low load blowdown, 7-12 t/ac, 0-3 inch diameter class, depth about 1 foot, blowdown scattered with many still standing, spread rate moderate and flame low",
+        1, 0.25, [
+            dead1h(0.20661157024793386, 2000, 8000),
+            dead10h(0.1951331496786042),
+            dead100h(0.18365472910927455),
         ],
-    },
-    { number: 203,
-        code: "sb3",
-        group: "FBFM40",
-        label: "High load activity fuel or moderate load blowdown",
-        desc: "High load activity fuel or moderate load blowdown, heavy dead down activity fuel or moderate blowdown, 7-12 t/ac, 0-.25 inch diameter class, depth > 1 foot, blowdown moderate trees compacted to near the ground, spread rate and flame high",
-        depth: 1.2,
-        deadMext: 0.25,
-        particles: [
-            {...Dead1, ovendryLoad: 0.2525252525252525, savr: 2000, heat: 8000},
-            {...Dead10, ovendryLoad: 0.12626262626262624, heat: 8000},
-            {...Dead100, ovendryLoad: 0.13774104683195593, heat: 8000},
+    ),
+    model( 203, "sb3", "FBFM40", "High load activity fuel or moderate load blowdown",
+        "High load activity fuel or moderate load blowdown, heavy dead down activity fuel or moderate blowdown, 7-12 t/ac, 0-.25 inch diameter class, depth > 1 foot, blowdown moderate trees compacted to near the ground, spread rate and flame high",
+        1.2, 0.25, [
+            dead1h(0.2525252525252525, 2000, 8000),
+            dead10h(0.12626262626262624),
+            dead100h(0.13774104683195593),
         ],
-    },
-    { number: 204,
-        code: "sb4",
-        group: "FBFM40",
-        label: "High load blowdown",
-        desc: "High load blowdown, heavy blowdown fuel, blowdown is total fuelbed not compacted, foliage and fine fuel still attached to blowdown, spread rate and flame very high ",
-        depth: 2.7,
-        deadMext: 0.25,
-        particles: [
-            {...Dead1, ovendryLoad: 0.24104683195592286, savr: 2000, heat: 8000},
-            {...Dead10, ovendryLoad: 0.16069788797061524, heat: 8000},
-            {...Dead100, ovendryLoad: 0.24104683195592286, heat: 8000},
+    ),
+    model( 204, "sb4", "FBFM40", "High load blowdown",
+        "High load blowdown, heavy blowdown fuel, blowdown is total fuelbed not compacted, foliage and fine fuel still attached to blowdown, spread rate and flame very high ",
+        2.7, 0.25, [
+            dead1h(0.24104683195592286, 2000, 8000),
+            dead10h(0.16069788797061524),
+            dead100h(0.24104683195592286),
         ],
-    },
-    { number: 301,
-        code: "crown",
-        group: "CROWN",
-        label: "Crown canopy fuel",
-        desc: "Crown canopy fuel model used by Rothermel`s crown fire spread rate model.",
-        depth: 1,
-        deadMext: 0.25,
-        particles: [
-            {...Dead1, ovendryLoad: 0.138, savr: 2000, heat: 8000},
-            {...Dead10, ovendryLoad: 0.092, heat: 8000},
-            {...Dead100, ovendryLoad: 0.23, heat: 8000},
-            {...Stem, ovendryLoad: 0.092, savr: 1500, heat: 8000}
+    ),
+    model( 301, "crown", "CROWN", "Crown canopy fuel",
+        "Crown canopy fuel model used by Rothermel`s crown fire spread rate model.",
+        1, 0.25, [
+            dead1h(0.138, 2000, 8000),
+            dead10h(0.092),
+            dead100h(0.23),
+            liveStem(0.092, 1500),
         ],
-    },
+    ),
 ]

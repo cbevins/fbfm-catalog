@@ -11,7 +11,7 @@
  * 
  * The set(fuelKey, fuelModel) method is used to add custom fuel models to the catalog.
 */
-import { FuelModels } from "./FuelModels.js"
+import { FuelModels } from "./FuelModelsv1.js"
 
 export class FuelModelCatalog {
     constructor() {

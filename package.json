@@ -1,6 +1,6 @@
 {
   "name": "fbfm-catalog",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Fire behavior fuel models in javascript",
   "type": "module",
   "main": "./src/index.js",
@@ -13,6 +13,9 @@
   "scripts": {
       "test": "vitest",
       "test:run": "vitest run"
+  },
+  "publishConfig": {
+    "registry": "http://localhost:4873/"
   },
   "keywords": [],
   "author": "Collin D. Bevins",

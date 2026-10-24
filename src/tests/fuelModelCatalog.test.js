@@ -1,18 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { FuelModelCatalog } from '../FuelModelCatalog.js'
-import {Herb} from '../FuelModels.js'
-
-const Cheatgrass = { number: 301,
-    code: "cheatgrass",
-    group: "CUSTOM",
-    label: "Cheatgrass",
-    desc: "Cures early in the season",
-    depth: 1,
-    deadMext: 0.15,
-    particles: [
-        {...Herb, ovendryLoad: 0.10, savr: 2500, heat: 8000},
-    ],
-}
+import { FuelModelCatalog, model, curableHerb } from '../index.js'
 
 describe('FuelModelCatalog Class', () => {
     it('has FBFM13, FBFM40, and LANDFIRE fuel models available by number and code', () => {
@@ -100,10 +87,16 @@ describe('FuelModelCatalog Class', () => {
         expect(moistureClasses).toContain('moistureLiveStem')
         expect(moistureClasses).toContain('moistureLiveHerb')
     })
+
     it('set() custom fuel model', () => {
         const catalog = new FuelModelCatalog()
         expect(catalog.has('cheatgrass')).toBe(false)
+        
+        const Cheatgrass = model(301, "Cheatgrass", "Bevins 2026", "Curable Cheatgrass",
+            "Curable Cheatgrass as an example custom model",
+            1, 0.15, [curableHerb(0.0872359963269054, 1800, 8000)])
         catalog.set(Cheatgrass)
+
         expect(catalog.has('cheatgrass')).toBe(true)
         expect(catalog.isBurnable('cheatgrass')).toBe(true)
         expect(catalog.isCurable('cheatgrass')).toBe(true)

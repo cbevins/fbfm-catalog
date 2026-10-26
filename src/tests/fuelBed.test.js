@@ -16,10 +16,10 @@ const catalog = new FuelModelCatalog()
 const gr1 = catalog.get('gr1')
 
 describe('FuelBed Class', () => {
-    it('inherits correct model data', () => {
+    it('inherits correct fuel model data', () => {
         const bed = new FuelBed(gr1, {curedHerb: 0})
-        expect(bed.number).toBe(101)
-        expect(bed.code).toBe('gr1')
+        expect(bed.fuelModel.number).toBe(101)
+        expect(bed.fuelModel.code).toBe('gr1')
     })
 
     it('fails when fuelCuring is not an object', () => {
@@ -31,15 +31,16 @@ describe('FuelBed Class', () => {
     })
 
     it('apportions curable fuels between live and dead categories', () => {
-        const bed = new FuelBed(gr1, {curedHerb: 0})
+        let bed = new FuelBed(gr1, {curedHerb: 0})
         expect(bed.dead.ovendryLoad).toBe(gr1.particles[0].ovendryLoad)
         expect(bed.live.ovendryLoad).toBe(gr1.particles[1].ovendryLoad)
 
-        bed.update(gr1, {curedHerb: 0.5})
+        // FuelBed cannot be updated; a new instance must be created for every fuel model-curing combination
+        bed = new FuelBed(gr1, {curedHerb: 0.5})
         expect(bed.dead.ovendryLoad).toBe(gr1.particles[0].ovendryLoad + gr1.particles[1].ovendryLoad/2)
         expect(bed.live.ovendryLoad).toBe(gr1.particles[1].ovendryLoad/2)
 
-        bed.update(gr1, {curedHerb: 1})
+        bed = new FuelBed(gr1, {curedHerb: 1})
         expect(bed.dead.ovendryLoad).toBe(gr1.particles[0].ovendryLoad + gr1.particles[1].ovendryLoad)
         expect(bed.live.ovendryLoad).toBe(0)
     })

@@ -1,14 +1,10 @@
-import { FuelModelCatalog, FuelBed, FuelIgnition, FireBehavior } from '../index.js'
+import { FuelModelCatalog, FuelBed, FuelIgnition, FireBehavior, FireShape } from '../index.js'
 
-const catalog = new FuelModelCatalog()
-
-const fm010 = catalog.get(10)
-const fm124 = catalog.get(124)
-
+// Inputs
+const fuelKey = '10'
 const fuelCuring = {
     curedHerb: 0.778,
 }
-
 const fuelMoisture = {
     moistureDead1h: 0.05,
     moistureDead10h: 0.07,
@@ -16,16 +12,20 @@ const fuelMoisture = {
     moistureLiveHerb: 0.5,
     moistureLiveStem: 1.5
 }
-
-const limitWindSpeedFactor = true
-const limitSpreadRateToWindSpeed = true
 const midflameWindSpeed = 10*88
 const windBearing = 90
 const aspect = 180
 const slopeRatio = 0.25
+const limitWindSpeedFactor = true
+const limitSpreadRateToWindSpeed = true
 
-const fuelBed = new FuelBed(fm010, fuelCuring)
+// Processing
+const catalog = new FuelModelCatalog()
+const fuelModel = catalog.get(fuelKey)
+const fuelBed = new FuelBed(fuelModel, fuelCuring)
 const fuelIgnition = new FuelIgnition(fuelBed, fuelMoisture)
 const fireBehavior = new FireBehavior(fuelBed, fuelIgnition,
     midflameWindSpeed, windBearing, slopeRatio, aspect,
     limitWindSpeedFactor, limitSpreadRateToWindSpeed)
+const fireShape = new FireShape(fireBehavior)
+console.table(fireShape)

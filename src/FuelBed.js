@@ -1,27 +1,20 @@
-/**
- * The FuelBed class does as much processing of Fuel Model parameters as possible
- * up to the application of moisture, wind, and slope conditions.
- */
 import { fraction } from './utils.js'
+
 export class FuelBed {
     /**
      * Returns a FuelBed with any curable fuels apportioned to their respective dead and live classes.
-     * @param {FuelModel} fuelModel Reference to a fuel model as returned by FuelModelCatalog::get()
-     * @param {object} fuelCuring Reference to an object with cured fractions, such as {curedHerb: 0.5}
+     * @param {FuelModel} fuelModelRef Reference to a FuelModel as returned by FuelModelCatalog::get()
+     * @param {object} fuelCuringObj Reference to an object with cured fraction props, such as {curedHerb: 0.5}
      */
-    constructor (fuelModel, fuelCuring) {
-        this.init(fuelModel)
-        this.update(fuelModel, fuelCuring)
+    constructor (fuelModelRef, fuelCuringObj={curedHerb: 0}) {
+        this.#init()
+        this.#create(fuelModelRef, fuelCuringObj)
     }
 
-    init(fuelModel) {
-        this.number = fuelModel.number
-        this.code = fuelModel.code
-        this.label = fuelModel.label
-        this.source = fuelModel.source
-        this.desc = fuelModel.desc
-        this.depth= fuelModel.depth
-        this.deadMext = fuelModel.deadMext
+    #init() {
+        this.fuelModel = null
+        this.depth = 1
+        this.deadMext = 0.15
         this.dead = {}
         this.live = {}
         this.savr = 0
@@ -47,12 +40,14 @@ export class FuelBed {
         this.windC = 0
         this.windE = 0
     }
+    #create(fuelModelRef, fuelCuringObj) {
+        this.fuelModel = fuelModelRef
+        this.depth= fuelModelRef.depth
+        this.deadMext = fuelModelRef.deadMext
 
-    update( fuelModel,      // Reference to a FuelModel
-            fuelCuring) {   // Reference to a FuelCuring instance
-        const dead = new FuelBedLife('dead', fuelModel, fuelCuring)
-        dead.mext = fuelModel.deadMext
-        const live = new FuelBedLife('live', fuelModel, fuelCuring)
+        const dead = new FuelBedLife('dead', fuelModelRef, fuelCuringObj)
+        dead.mext = fuelModelRef.deadMext
+        const live = new FuelBedLife('live', fuelModelRef, fuelCuringObj)
         live.mext = 5   // will be re-determined by the parent FuelBed
 
         // Accumulate fuel bed total surface area (ft2), ovendry load (lb/ft2), and volume (ft3)
@@ -69,7 +64,7 @@ export class FuelBed {
 
         // Fuel bed packing ratio is the ratio of bulk density to particle density
         // Rothermel (1972) eq 31 (p 26)
-        const packingRatio = (fuelModel.depth > 0) ? volume / fuelModel.depth : 0
+        const packingRatio = (fuelModelRef.depth > 0) ? volume / fuelModelRef.depth : 0
 
         //  Rothermel (1972) eq 37 (p 19, 26) and eq 69 (p32).
         const packingRatioOpt = (savr > 0) ? 3.348 / savr**0.8189 : 0
@@ -112,7 +107,7 @@ export class FuelBed {
         const liveMextFactor = (live.fineFuelLoad > 0) ? 2.9 * (dead.fineFuelLoad / live.fineFuelLoad) : 0
 
         // Open-canopy midflame wind speed reduction factor
-        const f = Math.min(6, Math.max(fuelModel.depth, 0.1))
+        const f = Math.min(6, Math.max(fuelModelRef.depth, 0.1))
         const midflameWsrf = 1.83 / Math.log((20 + 0.36 * f) / (0.13 * f))
 
         //----------------------------------------------------------------------------------
@@ -120,7 +115,7 @@ export class FuelBed {
         //----------------------------------------------------------------------------------
         
         // Fuel bed ovendry bulk density (lb/ft3) is only used to derive heat sink
-        const bulkDensity = (fuelModel.depth > 0) ? ovendryLoad / fuelModel.depth : 0
+        const bulkDensity = (fuelModelRef.depth > 0) ? ovendryLoad / fuelModelRef.depth : 0
 
         // Fuel bed flame residence time (min)
         const residenceTime = (savr > 0) ? 384 / savr : 0
@@ -200,12 +195,12 @@ export class FuelBed {
  * in the section titled 'Formulation of Fire Spread Model'.
  */
 export class FuelBedLife {
-    constructor(category, fuelModel, fuelCuring) {
-        this.init()
-        this.update(category, fuelModel, fuelCuring)
+    constructor(category, fuelModelRef, fuelCuringObj) {
+        this.#init()
+        this.#update(category, fuelModelRef, fuelCuringObj)
     }
 
-    init() {
+    #init() {
         this.fineFuelLoad = 0
         this.heatSource = 0
         this.netLoad = 0
@@ -218,10 +213,9 @@ export class FuelBedLife {
         this.mineralDamping = 0
     }
 
-    update(category, fuelModel, fuelCuring) {
+    #update(category, fuelModelRef, fuelCuringObj) {
         // Since fuel updates are generally processed much less frequently
         // than moisture updates, do as much computation as possible here
-        // NOTE that inputs is passed in since it may contain FuelParticle curingClass data
         const fineFuelLoadFactor = (category === 'dead') ? -138 : -500
         let lifeEffectiveMineral = 0
         let lifeFineFuelLoad = 0
@@ -240,40 +234,40 @@ export class FuelBedLife {
         // First iterate through all the *FuelModelParticles* to derive intermediate properties
         // and accumulate life category surface area, surface area by size class,
         // ovendry load, fine fuel load, and volume.
-        for(let particle of fuelModel.particles) {
+        for(let particle of fuelModelRef.particles) {
 
             // Could this particle have fuel in this life category?
             if (particle.life === category || particle.life === "curable") {
-                // Determine the fraction of particle's ovendry load for this life category
+                // Determine particle's ovendry load and accumulate it over this life category
                 let loadFraction = 1
+                // If particle is 'curable', determine it load fraction for this life category
                 if (particle.life === "curable") {
-                    // Only apply a curable's curedFraction if its curingClass is in the inputs
-                    let curedFraction = 0
-                    if (!Object.hasOwn(fuelCuring, particle.curingClass))
-                        throw new Error(`FuelBedLife() fuel model ${fuelModel.number} has a curingClass ${particle.curingClass} that is not defined in the fuelCuring input object.`)
-                    curedFraction = fuelCuring[particle.curingClass]
+                    if (!Object.hasOwn(fuelCuringObj, particle.curingClass))
+                        throw new Error(`FuelBedLife() fuel model ${fuelModelRef.number} has a curingClass '${particle.curingClass}' that is not defined in the fuelCuring input object.`)
+                    const curedFraction = fuelCuringObj[particle.curingClass]
                     loadFraction = (category === "dead") ? curedFraction : 1 - curedFraction
                 }
                 const ovendryLoad = loadFraction * particle.ovendryLoad
                 lifeOvendryLoad += ovendryLoad
 
-                // Accumulate particle's surface area (ft2)
+                // Determine particle's surface area (ft2) and accumulate it over this life category
                 const surfaceArea = (particle.density > 0) ? (ovendryLoad * particle.savr) / particle.density : 0
                 lifeSurfaceArea += surfaceArea
 
-                // Determine particle's size class [0-5]
+                // Determine particle's size class [0-5] and accumulate its surface area for this size class
                 const sizeClass = this.calcFuelParticleSizeClass(particle.savr)
                 lifeSizeClassSurfaceArea[sizeClass] += surfaceArea
 
-                // Determine and accumulate particle's volume
+                // Determine particle's volume and accumulate it over this life category
                 const volume = (particle.density > 0) ? ovendryLoad / particle.density : 0
                 lifeVolume += volume
 
                 // Determine particle's net (mineral-free) load used in next section
                 const netLoad = (1 - particle.totalMineral) * ovendryLoad
 
-                // Determine and accumulate particle's fine fuel load, which is same as
-                // effective heating for dead particles, but different for live particles
+                // Determine particle's fine fuel load and accumulate it over this life category
+                // Note that 'fine fuel load' is same as the 'effective heating number' for dead particles,
+                // but is different for live particles
                 const fineFuelLoad = (particle.savr > 0) ?
                     ovendryLoad * Math.exp(fineFuelLoadFactor / particle.savr) : 0
                 lifeFineFuelLoad += fineFuelLoad

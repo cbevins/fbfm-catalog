@@ -1,6 +1,10 @@
-// export { FuelModels, model, dead1h, dead10h, dead100h, liveStem, liveHerb, curableHerb } from './FuelModels.js'
 export * from './FuelModels.js'
+export * from './getEllipseAngles.js'
 export { FireBehavior } from './FireBehavior.js'
+export { FireShape } from './FireShape.js'
+export { FireSize } from './FireSize.js'
+export { FireVectorBack, FireVectorBeta, FireVectorBeta6, FireVectorHead,
+    FireVectorLeftFlank, FireVectorPsi, FireVectorRightFlank, calcPsiSpreadRate } from './FireVectors.js'
 export { FuelBed } from './FuelBed.js'
 export { FuelIgnition } from './FuelIgnition.js'
 export { FuelModelCatalog } from './FuelModelCatalog.js'

@@ -1,20 +1,23 @@
+/**
+ * Given a FuelBed and FuelIgnition reference and wind-slope parameters, the FireBehavior class
+ * determines the fire spread rate, bearing, fireline intensity, and length-to-width ratio.
+ * A FireBehavior instance may be reused for different FuelBed, FuelIgnition, or wind-slope
+ * parameters via its update() method.
+ */
+import { getScorchHeight } from './utils.js'
+
 export class FireBehavior {
     /**
-     * 
-     * @param {FuelBed} fuelBed Reference to an object created by new FuelBed()
-     * @param {FuelIgnition} fuelIgnition Reference to an object created by new FuelIgnition() 
-     * @param {*} midflameWindSpeed midflame wind speed (ft/min)
-     * @param {*} windBearing wind bearing, degrees clockwise from north
-     * @param {*} slopeRatio ratio of slope vertical rise / horizontal reach
-     * @param {*} aspect downslope direction in degrees clockwise from north
-     * @param {*} limitWindSpeedFactor apply Rothermel's wind coefficient limit?
-     * @param {*} limitSpreadRateToWindSpeed  limit spread rate to less than effective wind speed
+     * @param {FuelIgnition} fuelIgnition Reference to an object created by new FuelIgnition() or has the following props:
+     * {fuelBed, noWindSpreadRate, reactionIntensity} 
+     * @param {object} windSlopeObj Reference to an object with the following properties and defaults:
+     * {midflameWindSpeed=0, windBearing=0, slopeRatio=0, aspect=180}
+     * @param {object} optionsObj Reference to an object with the following properties and defaults:
+     * {limitWindSpeedFactor=true, limitSpreadRateToWindSpeed=true}
      */
-    constructor(fuelBed, fuelIgnition, midflameWindSpeed=0, windBearing=0, slopeRatio=0, aspect=180,
-            limitWindSpeedFactor=true, limitSpreadRateToWindSpeed=true) {
+    constructor(fuelIgnition, windSlopeObj, optionsObj={limitWindSpeedFactor:true, limitSpreadRateToWindSpeed:true}) {
         this.init()
-        this.update(fuelBed, fuelIgnition, midflameWindSpeed, windBearing, slopeRatio, aspect,
-            limitWindSpeedFactor, limitSpreadRateToWindSpeed)
+        this.update(fuelIgnition, windSlopeObj, optionsObj)
     }
     init() {
         // Save whatever is needed for use further downstream
@@ -45,12 +48,17 @@ export class FireBehavior {
         this.crossSlopeWindSpreadRate = 0
     }
 
-    update(fuelBed, fuelIgnition, midflameWindSpeed=0, windBearing=0, slopeRatio=0, aspect=180,
-            limitWindSpeedFactor=true, limitSpreadRateToWindSpeed=true) {
+    update(fuelIgnition, windSlopeObj, optionsObj={limitWindSpeedFactor:true, limitSpreadRateToWindSpeed:true}) {
+        // Get required fuelIgnition input properties
+        let {fuelBed, noWindSpreadRate, reactionIntensity} = fuelIgnition
+
+        // Get required wind and slope parameters and computation options
+        let {midflameWindSpeed=0, windBearing=0, slopeRatio=0, aspect=180} = windSlopeObj
+
+        let {limitWindSpeedFactor=true, limitSpreadRateToWindSpeed=true} = optionsObj
+
         // Get required fuelBed input properties
         let {slopeK, windB, windI, windK, residenceTime} = fuelBed
-        // Get required fuelIgnition input properties
-        let {noWindSpreadRate, reactionIntensity} = fuelIgnition
 
         //----------------------------------------------------------------------
         // OK, here we go...
@@ -228,5 +236,9 @@ export class FireBehavior {
             ews = a**b
         }
         return ews
+    }
+
+    scorchHeight(airTemp=77) {
+        return getScorchHeight(this.firelineIntensity, airTemp, this.midflameWindSpeed)
     }
 }

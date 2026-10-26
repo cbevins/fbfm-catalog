@@ -4,10 +4,11 @@ import { FuelModelCatalog, FuelBed, FuelIgnition, FireBehavior } from '../index.
 import { parts, ppb } from './assertions.js'
 expect.extend({ parts })
 
-// Inputs
+// FuelBed input parameters
 const fuelCuring = {
     curedHerb: 0.778,
 }
+// FuelIgnition input parameters
 const fuelMoisture = {
     moistureDead1h: 0.05,
     moistureDead10h: 0.07,
@@ -15,23 +16,24 @@ const fuelMoisture = {
     moistureLiveHerb: 0.5,
     moistureLiveStem: 1.5
 }
+// FireBehavior input parameters
+const windSlope = {
+    midflameWindSpeed: 10*88,
+    windBearing: 90,
+    slopeRatio: 0.25,
+    aspect: 180,
+    limitWindSpeedFactor: true,
+    limitSpreadRateToWindSpeed: true
+}
 
 const catalog = new FuelModelCatalog()
-const limitWindSpeedFactor = true
-const limitSpreadRateToWindSpeed = true
-const midflameWindSpeed = 10*88
-const windBearing = 90
-const aspect = 180
-const slopeRatio = 0.25
 
 describe('FireBehavior Class', () => {
     it('Fuel Model 10 FireBehavior properties match BehavePlus v5 and v6 beta:', () => {
         const fuelModel = catalog.get(10)
         const fuelBed = new FuelBed(fuelModel, fuelCuring)
         const fuelIgnition = new FuelIgnition(fuelBed, fuelMoisture)
-        const fireBehavior = new FireBehavior(fuelBed, fuelIgnition,
-            midflameWindSpeed, windBearing, slopeRatio, aspect,
-            limitWindSpeedFactor, limitSpreadRateToWindSpeed)
+        const fireBehavior = new FireBehavior(fuelIgnition, windSlope)
 
         expect(fireBehavior.xComponent).parts(0.75673013692577218, 1.0e-8)
         expect(fireBehavior.yComponent).parts(17.856644527335789, ppb)
@@ -47,16 +49,15 @@ describe('FireBehavior Class', () => {
         expect(fireBehavior.effWindFactor).parts(26.321715915373524, ppb)
         expect(fireBehavior.effWindSpeed).parts(880.55194372010692, ppb)
         expect(fireBehavior.lengthWidthRatio).parts(3.5015680219321221, ppb)
-        // expect(fireBehavior.getScorchHeight(95)).parts(39.580182, 1.0e-8)
+        expect(fireBehavior.scorchHeight(95)).parts(39.580182, 1.0e-8)
     })
+    
 
     it('Fuel Model 124 FireBehavior properties match BehavePlus v5 and v6 beta:', () => {
         const fuelModel = catalog.get(124)
         const fuelBed = new FuelBed(fuelModel, fuelCuring)
         const fuelIgnition = new FuelIgnition(fuelBed, fuelMoisture)
-        const fireBehavior = new FireBehavior(fuelBed, fuelIgnition,
-            midflameWindSpeed, windBearing, slopeRatio, aspect,
-            limitWindSpeedFactor, limitSpreadRateToWindSpeed)
+        const fireBehavior = new FireBehavior(fuelIgnition, windSlope)
 
         expect(fireBehavior.xComponent).parts(1.9584486126230398, 1.0e-8)
         expect(fireBehavior.yComponent).parts(46.996312501163828, ppb)
@@ -72,6 +73,6 @@ describe('FireBehavior Class', () => {
         expect(fireBehavior.effWindFactor).parts(32.816782854703028, ppb)
         expect(fireBehavior.effWindSpeed).parts(880.5568433322004, ppb)
         expect(fireBehavior.lengthWidthRatio).parts(3.501581941, ppb)
-        // expect(fireBehavior.getScorchHeight(95)).parts(215.682771, 1.0e-8)
+        expect(fireBehavior.scorchHeight(95)).parts(215.682771, 1.0e-8)
     })
 })

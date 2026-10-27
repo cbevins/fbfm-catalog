@@ -1,12 +1,9 @@
-import { describe, it, expect } from 'vitest'
 import { FuelModelCatalog, FuelBed } from '../index.js'
+import * as Bp from './Bp6Inputs.js'
 
+import { describe, it, expect } from 'vitest'
 import { parts, ppb } from './assertions.js'
 expect.extend({ parts })
-
-const fuelCuring = {
-    curedHerb: 0.778,
-}
 
 // Functions meant to *throw* and Error
 function fuelCuringNotAnObject() { const bed = new FuelBed(gr1, 0.5) }
@@ -47,7 +44,7 @@ describe('FuelBed Class', () => {
     
     it('Fuel Model 10 FuelBed properties match BehavePlus v5 and v6 beta:', () => {
         const fuelModel = catalog.get(10)
-        const fuelBed = new FuelBed(fuelModel, fuelCuring)
+        const fuelBed = new FuelBed(fuelModel, Bp.fuelCuring)
         
         expect(fuelBed.bulkDensity).parts(0.552, ppb)
         expect(fuelBed.depth).parts(1, ppb)
@@ -86,7 +83,7 @@ describe('FuelBed Class', () => {
     
     it('Fuel Model 124 FuelBed properties match BehavePlus v5 and v6 beta:', () => {
         const fuelModel = catalog.get(124)
-        const fuelBed = new FuelBed(fuelModel, fuelCuring)
+        const fuelBed = new FuelBed(fuelModel, Bp.fuelCuring)
 
         expect(fuelBed.surfaceArea).parts(29.062930440771346, ppb)
         expect(fuelBed.savr).parts(1631.1287341340956, ppb)

@@ -1,10 +1,11 @@
 import { clockwiseFromHeadToBearing, clockwiseFromHeadToRotation,
-    getFlameLength, toRadians } from './utils.js'
+    getFlameLength, getScorchHeight, toRadians } from './utils.js'
 import { calcBetaFromTheta, calcPsiFromTheta, calcThetaFromBeta } from './getEllipseAngles.js'
 
 export class FireVector {
-    constructor() {
+    constructor(optionsObj={calcFlameLength:true}) {
         this.init()
+        this.calcFlameLength = optionsObj.calcFlameLength
     }
     init() {
         this.angleFromHead = 0
@@ -21,32 +22,25 @@ export class FireVector {
         this.scorchHeight = 0
         return this
     }
-    updateScorchHeight(windSpeed, airTemp) {
-        this.scorchHeight = 0
-        if (this.firelineIntensity > 0) {
-            const fli = this.firelineIntensity
-            const mph = windSpeed / 88
-            this.scorchHeight = ((63 / (140 - airTemp))
-                * Math.pow(fli, 1.166667))
-                / Math.sqrt(fli + mph * mph * mph)
-        }
-        return this
+    getScorchHeight(windSpeed, airTemp) { 
+        this.scorchHeight = (this.firelineIntensity <= 0) ? 0 :
+            getScorchHeight(this.firelineIntensity, airTemp, windSpeed/88)
+        return this.scorchHeight
     }
 }
 
 //------------------------------------------------------------------------------
-// makeBetaVector()
+// FireVectorBeta()
 // 'Beta' fire vectors are anchored at the FireEllipse ignition point
 // at [ignX, ignY] in the local coordinate system,
 // or at [ignEast, ignNorth] projected coordinate system.
 //------------------------------------------------------------------------------
 export class FireVectorBeta extends FireVector {
-    constructor() {
-        super()
+    constructor(optionsObj={calcFlameLength:true}) {
+        super(optionsObj)
     }
-    update(fireSize=null, betaFromHead=0, includeFlameLength=true) {
+    update(fireSize, betaFromHead=0) {
         this.init()
-        if (fireSize===null) return
 
         // Get required fireSize (and fireEllipse) input properties
         let {bearing, eccentricity:e, headingSpreadRate, firelineIntensity, rotationDeg,
@@ -70,22 +64,22 @@ export class FireVectorBeta extends FireVector {
         this.east = this.x + ignEast - ignX
         this.north = this.y + ignNorth - ignY
 
-        if (includeFlameLength)
+        if (this.calcFlameLength)
             this.flameLength = getFlameLength(this.firelineIntensity)
         return this
     }
 }
 
 //------------------------------------------------------------------------------
-// makeBeta6Vector() uses Psi fli
+// FireVectorBeta6() uses Psi angle's fireline intensity
 //------------------------------------------------------------------------------
+
 export class FireVectorBeta6 extends FireVectorBeta {
-    constructor() {
-        super()
+    constructor(optionsObj={calcFlameLength:true}) {
+        super(optionsObj)
     }
-    update(fireSize=null, betaFromHead=0, includeFlameLength=true) {
-        super.update(fireSize, betaFromHead, false)
-        if (fireSize===null) return
+    update(fireSize, betaFromHead=0) {
+        super.update(fireSize, betaFromHead)
 
        // betaRotation is the *counter-clockwise* rotation from fire heading
         const betaRotation = clockwiseFromHeadToRotation(betaFromHead)
@@ -96,23 +90,18 @@ export class FireVectorBeta6 extends FireVectorBeta {
         this.psiRos = calcPsiSpreadRate(fireSize, this.psi)
         this.firelineIntensity = fireSize.firelineIntensity * this.psiRos / fireSize.headingSpreadRate
 
-        if (includeFlameLength)
+        if (this.calcFlameLength)
             this.flameLength = getFlameLength(this.firelineIntensity)
         return this
     }
 }
 
-//------------------------------------------------------------------------------
-// makePsiVector()
-//------------------------------------------------------------------------------
-
 export class FireVectorPsi extends FireVector {
-    constructor() {
-        super()
+    constructor(optionsObj={calcFlameLength:true}) {
+        super(optionsObj)
     }
-    update(fireSize=null, psiFromHead=0, includeFlameLength=true) {
+    update(fireSize, psiFromHead=0) {
         this.init()
-        if (fireSize===null) return
 
         // Get required fireEllipse/fireSize/firePosition input properties from fireSize
         let {bearing, headingSpreadRate, firelineIntensity, rotationDeg,
@@ -135,47 +124,47 @@ export class FireVectorPsi extends FireVector {
         this.east = this.x + ignEast - ignX
         this.north = this.y + ignNorth - ignY
 
-        if (includeFlameLength)
+        if (this.calcFlameLength)
             this.flameLength = getFlameLength(this.firelineIntensity)
         return this
     }
 }
 
 export class FireVectorBack extends FireVectorBeta {
-    constructor() {
-        super()
+    constructor(optionsObj={calcFlameLength:true}) {
+        super(optionsObj)
     }
-    update(fireSize=null, includeFlameLength=true) {
-        return super.update(fireSize, 180, includeFlameLength)
+    update(fireSize) {
+        return super.update(fireSize, 180)
     }
 }
 
 export class FireVectorHead extends FireVectorBeta {
-    constructor() {
-        super()
+    constructor(optionsObj={calcFlameLength:true}) {
+        super(optionsObj)
     }
-    update(fireSize=null, includeFlameLength=true) {
-        return super.update(fireSize, 0, includeFlameLength)
+    update(fireSize) {
+        return super.update(fireSize, 0)
     }
 }
 
 export class FireVectorLeftFlank extends FireVectorBeta {
-    constructor() {
-        super()
+    constructor(optionsObj={calcFlameLength:true}) {
+        super(optionsObj)
     }
-    update(fireSize=null, includeFlameLength=true) {
-        const beta = calcBetaFromTheta(fireSize, 270)
-        return super.update(fireSize, beta, includeFlameLength)
+    update(fireSize) {
+        const betaFromHead = calcBetaFromTheta(fireSize, 270)
+        return super.update(fireSize, betaFromHead)
     }
 }
 
 export class FireVectorRightFlank extends FireVectorBeta {
-    constructor() {
-        super()
+    constructor(optionsObj={calcFlameLength:true}) {
+        super(optionsObj)
     }
-    update(fireSize=null, includeFlameLength=true) {
-        const beta = calcBetaFromTheta(fireSize, 90)
-        return super.update(fireSize, beta, includeFlameLength)
+    update(fireSize) {
+        const betaFromHead = calcBetaFromTheta(fireSize, 90)
+        return super.update(fireSize, betaFromHead)
     }
 }
 

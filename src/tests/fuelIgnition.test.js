@@ -1,28 +1,17 @@
-import { describe, it, expect } from 'vitest'
 import { FuelModelCatalog, FuelBed, FuelIgnition } from '../index.js'
+import * as Bp from './Bp6Inputs.js'
 
+import { describe, it, expect } from 'vitest'
 import { parts, ppb } from './assertions.js'
 expect.extend({ parts })
-
-// Inputs
-const fuelCuring = {
-    curedHerb: 0.778,
-}
-const fuelMoisture = {
-    moistureDead1h: 0.05,
-    moistureDead10h: 0.07,
-    moistureDead100h: 0.09,
-    moistureLiveHerb: 0.5,
-    moistureLiveStem: 1.5
-}
 
 const catalog = new FuelModelCatalog()
 
 describe('FuelIgnition Class', () => {
     it('Fuel Model 10 FuelIgnition properties match BehavePlus v5 and v6 beta', () => {
         const fuelModel = catalog.get(10)
-        const fuelBed = new FuelBed(fuelModel, fuelCuring)
-        const fuelIgnition = new FuelIgnition(fuelBed, fuelMoisture)
+        const fuelBed = new FuelBed(fuelModel, Bp.fuelCuring)
+        const fuelIgnition = new FuelIgnition(fuelBed, Bp.fuelMoisture)
 
         expect(fuelIgnition.dead.fineFuelMoisture).parts(0.05389207884883955, ppb)
         expect(fuelIgnition.dead.fineWaterLoad).parts(0.008463731497256665, ppb)
@@ -43,8 +32,8 @@ describe('FuelIgnition Class', () => {
     })
     it('Fuel Model 124 FuelIgnition properties match BehavePlus v5 and v6 beta', () => {
         const fuelModel = catalog.get(124)
-        const fuelBed = new FuelBed(fuelModel, fuelCuring)
-        const fuelIgnition = new FuelIgnition(fuelBed, fuelMoisture)
+        const fuelBed = new FuelBed(fuelModel, Bp.fuelCuring)
+        const fuelIgnition = new FuelIgnition(fuelBed, Bp.fuelMoisture)
 
         expect(fuelIgnition.dead.fineFuelMoisture).parts(0.050405399380187531, ppb)
         expect(fuelIgnition.dead.fineWaterLoad).parts(0.0098866289779641001, ppb)

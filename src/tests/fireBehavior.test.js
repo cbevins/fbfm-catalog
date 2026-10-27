@@ -1,39 +1,18 @@
-import { describe, it, expect } from 'vitest'
 import { FuelModelCatalog, FuelBed, FuelIgnition, FireBehavior } from '../index.js'
+import * as Bp from './Bp6Inputs.js'
 
+import { describe, it, expect } from 'vitest'
 import { parts, ppb } from './assertions.js'
 expect.extend({ parts })
-
-// FuelBed input parameters
-const fuelCuring = {
-    curedHerb: 0.778,
-}
-// FuelIgnition input parameters
-const fuelMoisture = {
-    moistureDead1h: 0.05,
-    moistureDead10h: 0.07,
-    moistureDead100h: 0.09,
-    moistureLiveHerb: 0.5,
-    moistureLiveStem: 1.5
-}
-// FireBehavior input parameters
-const windSlope = {
-    midflameWindSpeed: 10*88,
-    windBearing: 90,
-    slopeRatio: 0.25,
-    aspect: 180,
-    limitWindSpeedFactor: true,
-    limitSpreadRateToWindSpeed: true
-}
 
 const catalog = new FuelModelCatalog()
 
 describe('FireBehavior Class', () => {
     it('Fuel Model 10 FireBehavior properties match BehavePlus v5 and v6 beta:', () => {
         const fuelModel = catalog.get(10)
-        const fuelBed = new FuelBed(fuelModel, fuelCuring)
-        const fuelIgnition = new FuelIgnition(fuelBed, fuelMoisture)
-        const fireBehavior = new FireBehavior(fuelIgnition, windSlope)
+        const fuelBed = new FuelBed(fuelModel, Bp.fuelCuring)
+        const fuelIgnition = new FuelIgnition(fuelBed, Bp.fuelMoisture)
+        const fireBehavior = new FireBehavior(fuelIgnition, Bp.windSlope, Bp.options)
 
         expect(fireBehavior.xComponent).parts(0.75673013692577218, 1.0e-8)
         expect(fireBehavior.yComponent).parts(17.856644527335789, ppb)
@@ -51,13 +30,13 @@ describe('FireBehavior Class', () => {
         expect(fireBehavior.lengthWidthRatio).parts(3.5015680219321221, ppb)
         expect(fireBehavior.scorchHeight(95)).parts(39.580182, 1.0e-8)
     })
-    
+
 
     it('Fuel Model 124 FireBehavior properties match BehavePlus v5 and v6 beta:', () => {
         const fuelModel = catalog.get(124)
-        const fuelBed = new FuelBed(fuelModel, fuelCuring)
-        const fuelIgnition = new FuelIgnition(fuelBed, fuelMoisture)
-        const fireBehavior = new FireBehavior(fuelIgnition, windSlope)
+        const fuelBed = new FuelBed(fuelModel, Bp.fuelCuring)
+        const fuelIgnition = new FuelIgnition(fuelBed, Bp.fuelMoisture)
+        const fireBehavior = new FireBehavior(fuelIgnition, Bp.windSlope, Bp.options)
 
         expect(fireBehavior.xComponent).parts(1.9584486126230398, 1.0e-8)
         expect(fireBehavior.yComponent).parts(46.996312501163828, ppb)

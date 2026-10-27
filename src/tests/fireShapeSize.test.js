@@ -1,41 +1,9 @@
-import { describe, it, expect } from 'vitest'
 import { FuelModelCatalog, FuelBed, FuelIgnition, FireBehavior, FireShape, FireSize } from '../index.js'
-import { FireVectorBack, FireVectorBeta, FireVectorBeta6, FireVectorHead,
-    FireVectorLeftFlank, FireVectorPsi, FireVectorRightFlank } from '../index.js'
-
-
+import * as Bp from './Bp6Inputs.js'
+    
+import { describe, it, expect } from 'vitest'
 import { parts, ppb, ppm, ppt } from './assertions.js'
 expect.extend({ parts })
-
-// FuelBed input parameters
-const fuelCuring = {
-    curedHerb: 0.778,
-}
-// FuelIgnition input parameters
-const fuelMoisture = {
-    moistureDead1h: 0.05,
-    moistureDead10h: 0.07,
-    moistureDead100h: 0.09,
-    moistureLiveHerb: 0.5,
-    moistureLiveStem: 1.5
-}
-// FireBehavior input parameters
-const windSlope = {
-    midflameWindSpeed: 10*88,
-    windBearing: 90,
-    slopeRatio: 0.25,
-    aspect: 180,
-    limitWindSpeedFactor: true,
-    limitSpreadRateToWindSpeed: true
-}
-// FireSize input parameters
-const firePosition = {
-    elapsedTime: 60,
-    ignEast:0,
-    ignNorth:0,
-    ignX:0,
-    ignY:0
-}
 
 const catalog = new FuelModelCatalog()
 
@@ -107,14 +75,14 @@ const bpSizeProps = {
 const area = [289850.691417, 45.422576205218135 * (66.0 * 660.0)]
 const perimeter = [2476.2400999186934, 6469.7282289420209]
 
-describe('FireShape Class', () => {
+describe('FireShape and FireSize Class', () => {
     it(`Fuel Model 10 and 124 FireEllipse properties match BehavePlus v5 and v6 beta:`, () => {
         const fuel = [10, 124]
         for(let idx=0; idx<=1; idx++) {
             const fuelModel = catalog.get(fuel[idx])
-            const fuelBed = new FuelBed(fuelModel, fuelCuring)
-            const fuelIgnition = new FuelIgnition(fuelBed, fuelMoisture)
-            const fireBehavior = new FireBehavior(fuelIgnition, windSlope)
+            const fuelBed = new FuelBed(fuelModel, Bp.fuelCuring)
+            const fuelIgnition = new FuelIgnition(fuelBed, Bp.fuelMoisture)
+            const fireBehavior = new FireBehavior(fuelIgnition, Bp.windSlope, Bp.options)
             
             const fireShape = new FireShape(fireBehavior)
             for(let [prop, values] of Object.entries(bpShapeProps)) {
@@ -122,7 +90,7 @@ describe('FireShape Class', () => {
                 expect(fireShape[prop]).parts(values[idx], ppb)
             }
 
-            const fireSize = new FireSize(fireShape, firePosition)
+            const fireSize = new FireSize(fireShape, Bp.firePosition)
             for(let [prop, values] of Object.entries(bpSizeProps)) {
                 console.log(`Fuel Model ${fuel[idx]} prop ${prop} expect ${values[0]} received ${fireSize[prop]}`)
                 expect(fireSize[prop]).parts(values[idx], ppb)

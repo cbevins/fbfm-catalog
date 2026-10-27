@@ -1,7 +1,7 @@
 {
   "name": "fbfm-catalog",
-  "version": "0.0.3",
-  "description": "Fire behavior fuel models in javascript",
+  "version": "0.0.1",
+  "description": "Wildland fire behavior simulation library in ES6",
   "type": "module",
   "main": "./src/index.js",
   "exports": {
@@ -18,7 +18,7 @@
     "registry": "http://localhost:4873/"
   },
   "keywords": [],
-  "author": "Collin Douglas Bevins",
+  "author": "Collin D Bevins",
   "license": "MIT",
   "devDependencies": {
     "vitest": "^4.1.12"

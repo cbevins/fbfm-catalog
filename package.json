@@ -18,7 +18,7 @@
     "registry": "http://localhost:4873/"
   },
   "keywords": [],
-  "author": "Collin D. Bevins",
+  "author": "Collin Douglas Bevins",
   "license": "MIT",
   "devDependencies": {
     "vitest": "^4.1.12"
